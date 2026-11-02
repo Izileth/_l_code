@@ -14,15 +14,33 @@ const p = (t: string): Token => ({ t, k: 'plain' })
 
 export const CALL_STYLES: Record<CallStyleId, CallStyle> = {
   print: { label: 'print("…")', open: [{ t: 'print', k: 'fn' }, p('(')], close: ')', quote: true },
+  log: {
+    label: 'console.log("…")',
+    open: [{ t: 'console', k: 'plain' }, p('.'), { t: 'log', k: 'fn' }, p('(')],
+    close: ')',
+    quote: true,
+  },
   sing: {
     label: 'self.sing("…")',
     open: [p('self'), p('.'), { t: 'sing', k: 'fn' }, p('(')],
     close: ')',
     quote: true,
   },
+  sing_js: {
+    label: 'this.sing("…")',
+    open: [p('this'), p('.'), { t: 'sing', k: 'fn' }, p('(')],
+    close: ')',
+    quote: true,
+  },
   append: {
     label: 'lyrics.append("…")',
     open: [p('lyrics'), p('.'), { t: 'append', k: 'fn' }, p('(')],
+    close: ')',
+    quote: true,
+  },
+  push: {
+    label: 'lyrics.push("…")',
+    open: [p('lyrics'), p('.'), { t: 'push', k: 'fn' }, p('(')],
     close: ')',
     quote: true,
   },
@@ -81,7 +99,17 @@ export function buildCode(
   o: BuildOptions,
 ): BuildResult {
   const terminal = o.format === 'terminal'
-  const style: CallStyleId = terminal ? 'out' : o.style === 'out' ? 'print' : o.style
+  const isJs = o.format === 'javascript'
+  let style: CallStyleId = terminal ? 'out' : o.style === 'out' ? (isJs ? 'log' : 'print') : o.style
+  if (isJs) {
+    if (style === 'print') style = 'log'
+    else if (style === 'sing') style = 'sing_js'
+    else if (style === 'append') style = 'push'
+  } else if (!terminal) {
+    if (style === 'log') style = 'print'
+    else if (style === 'sing_js') style = 'sing'
+    else if (style === 'push') style = 'append'
+  }
   const quote = CALL_STYLES[style].quote
   const ind = ' '.repeat(o.indent)
   const className = toClassName(meta.title)
@@ -120,6 +148,22 @@ export function buildCode(
       ],
     ]
     head.forEach((tk, i) => lines.push(toks(tk, (win * i) / head.length, (win * (i + 1)) / head.length)))
+  } else if (isJs) {
+    const header = [
+      "import { Track } from 'reels'",
+      '',
+      `class ${className} {`,
+      `${ind}constructor() {`,
+      `${ind}${ind}this.title = "${esc(short(meta.title))}"`,
+      `${ind}${ind}this.artist = "${esc(short(meta.artist))}"`,
+      `${ind}${ind}this.year = ${year}`,
+      `${ind}}`,
+      '',
+      `${ind}play() {`,
+    ]
+    header.forEach((s, i) => {
+      lines.push(stat(s, (win * i) / header.length, (win * (i + 1)) / header.length))
+    })
   } else {
     const header = [
       'import time',
@@ -150,6 +194,8 @@ export function buildCode(
         const label = l.label ?? `Verso ${l.stanza + 1}`
         if (terminal) {
           lines.push(toks([{ t: `[${label.toLowerCase()}]`, k: 'attr' }], start - 0.6, start - 0.05))
+        } else if (isJs) {
+          lines.push(stat(`${ind}${ind}// ${label}`, start - 0.6, start - 0.05))
         } else {
           lines.push(stat(`${ind}${ind}# ${label}`, start - 0.6, start - 0.05))
         }
@@ -185,6 +231,13 @@ export function buildCode(
       ),
     )
     lines.push(toks([{ t: '$ ', k: 'plain' }], s0 + 0.9, s0 + 1.0))
+  } else if (isJs) {
+    lines.push(stat(`${ind}}`, s0, s0 + 0.2))
+    lines.push(stat('}', s0 + 0.2, s0 + 0.4))
+    lines.push(stat('', s0 + 0.4, s0 + 0.4))
+    lines.push(stat('// Executar', s0 + 0.4, s0 + 0.8))
+    lines.push(stat(`const ${varName} = new ${className}()`, s0 + 0.8, s0 + 1.3))
+    lines.push(stat(`${varName}.play()`, s0 + 1.3, s0 + 1.8))
   } else {
     lines.push(stat('# Executar', s0, s0 + 0.5))
     lines.push(stat(`${varName} = ${className}()`, s0 + 0.5, s0 + 1.1))

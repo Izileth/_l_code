@@ -15,10 +15,18 @@ export interface Token {
   k: TokenKind
 }
 
-export type FormatId = 'python' | 'terminal'
+export type FormatId = 'python' | 'terminal' | 'javascript'
 
 /** 'out' = texto puro (usado no formato terminal). */
-export type CallStyleId = 'print' | 'sing' | 'append' | 'yield' | 'out'
+export type CallStyleId =
+  | 'print'
+  | 'sing'
+  | 'append'
+  | 'yield'
+  | 'out'
+  | 'log'
+  | 'sing_js'
+  | 'push'
 
 export interface LyricPayload {
   text: string

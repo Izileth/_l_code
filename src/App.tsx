@@ -94,9 +94,16 @@ export default function App() {
 
   const changeFormat = (f: FormatId) => {
     setCodeFormat(f)
-    setSpectrum(f === 'python')
-    // só troca tema/fonte se o usuário ainda estiver nos padrões do formato anterior
-    if (themeId === 'preto' || themeId === 'shell') setThemeId(f === 'terminal' ? 'shell' : 'preto')
+    setSpectrum(f !== 'terminal')
+    if (f === 'javascript') {
+      setThemeId('javascript')
+      setStyle('log')
+    } else if (f === 'python') {
+      if (themeId === 'javascript' || themeId === 'shell') setThemeId('preto')
+      if (style === 'log' || style === 'sing_js' || style === 'push') setStyle('print')
+    } else if (f === 'terminal') {
+      if (themeId === 'preto' || themeId === 'javascript') setThemeId('shell')
+    }
     if (fontSize === 34 || fontSize === 42) setFontSize(f === 'terminal' ? 42 : 34)
   }
 
@@ -411,13 +418,23 @@ export default function App() {
 
           {/* aparência */}
           <Group title="Aparência">
-            <Row label="Formato" hint={terminal ? 'Só o código sendo escrito, em preto liso' : 'Classe Python com brilho e reação ao áudio'}>
+            <Row
+              label="Formato"
+              hint={
+                terminal
+                  ? 'Só o código sendo escrito, em preto liso'
+                  : codeFormat === 'javascript'
+                    ? 'Classe JavaScript com brilho e reação ao áudio'
+                    : 'Classe Python com brilho e reação ao áudio'
+              }
+            >
               <Segmented
                 value={codeFormat}
                 onChange={changeFormat}
                 options={[
                   { value: 'terminal', label: 'Terminal' },
                   { value: 'python', label: 'Python' },
+                  { value: 'javascript', label: 'JavaScript' },
                 ]}
               />
             </Row>
@@ -441,13 +458,14 @@ export default function App() {
                     onChange={(e) => setStyle(e.target.value as CallStyleId)}
                     aria-label="Forma de cada verso"
                   >
-                    {(Object.keys(CALL_STYLES) as CallStyleId[])
-                      .filter((id) => id !== 'out')
-                      .map((id) => (
-                        <option key={id} value={id}>
-                          {CALL_STYLES[id].label}
-                        </option>
-                      ))}
+                    {(codeFormat === 'javascript'
+                      ? (['log', 'sing_js', 'push', 'yield'] as CallStyleId[])
+                      : (['print', 'sing', 'append', 'yield'] as CallStyleId[])
+                    ).map((id) => (
+                      <option key={id} value={id}>
+                        {CALL_STYLES[id].label}
+                      </option>
+                    ))}
                   </Select>
                 </Row>
                 <Row label="Indentação">
@@ -468,7 +486,10 @@ export default function App() {
                 <span className="w-8 text-right text-[13px] tabular-nums text-white/50">{fontSize}</span>
               </div>
             </Row>
-            <Row label="Rótulo das estrofes" hint={terminal ? '[verso 1]' : '# Verso 1'}>
+            <Row
+              label="Rótulo das estrofes"
+              hint={terminal ? '[verso 1]' : codeFormat === 'javascript' ? '// Verso 1' : '# Verso 1'}
+            >
               <Switch label="Rótulo das estrofes" checked={sections} onChange={setSections} />
             </Row>
             <Row label="Números de linha">
