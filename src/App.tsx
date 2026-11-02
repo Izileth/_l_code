@@ -213,7 +213,7 @@ export default function App() {
     setExp({ phase: 'recording' })
 
     const hasAudio = recordAudio && engine.loaded
-    const targetDuration = effectiveTotal
+    const targetDuration = effectiveTotal   // segundos
 
     try {
       engine.pause()
@@ -223,40 +223,54 @@ export default function App() {
       }
       engine.setSpeakersMuted(muteExport && hasAudio)
 
-      const rec = startRecording(canvas, hasAudio ? engine.getRecordingStream() : null, fps)
+      const audioStream = hasAudio ? engine.getRecordingStream() : null
+      const rec = startRecording(canvas, audioStream, fps)
       recRef.current = rec
 
-      const ended = new Promise<void>((resolve) => {
-        let interval: number | null = null
-
-        const cleanup = () => {
-          if (interval !== null) clearInterval(interval)
-          engine.audio.removeEventListener('ended', onEnd)
-        }
-
-        const onEnd = () => {
-          cleanup()
+      // ─── Espera o fim da gravação ─────────────────────────────
+      // Estratégia híbrida:
+      //   • Com áudio real: ouve o evento 'ended' do audio element (fonte de verdade)
+      //   • Ambos os casos: fallback por setTimeout com margem de segurança
+      //     (o tempo real é wall-clock, não depende do engine.time avançar)
+      const waitEnded = new Promise<void>((resolve) => {
+        let resolved = false
+        const done = () => {
+          if (resolved) return
+          resolved = true
           resolve()
         }
 
-        engine.audio.addEventListener('ended', onEnd)
+        // Fallback por tempo de parede: espera a duração real + 800ms de margem
+        const wallTimer = window.setTimeout(done, targetDuration * 1000 + 800)
 
-        interval = window.setInterval(() => {
-          if (engine.time >= targetDuration) {
-            cleanup()
-            resolve()
+        if (engine.loaded) {
+          // Áudio real: evento 'ended' é o sinal mais preciso
+          const onEnd = () => {
+            engine.audio.removeEventListener('ended', onEnd)
+            window.clearTimeout(wallTimer)
+            done()
           }
-        }, 50)
+          engine.audio.addEventListener('ended', onEnd)
 
-        cancelRef.current = () => {
-          cleanup()
-          resolve()
+          cancelRef.current = () => {
+            engine.audio.removeEventListener('ended', onEnd)
+            window.clearTimeout(wallTimer)
+            done()
+          }
+        } else {
+          // Sem áudio: o único critério é o timer de parede acima
+          cancelRef.current = () => {
+            window.clearTimeout(wallTimer)
+            done()
+          }
         }
       })
 
       await engine.play()
-      await ended
-      await new Promise((r) => setTimeout(r, 400))
+      await waitEnded
+
+      // Pequena pausa para o último chunk do MediaRecorder ser finalizado
+      await new Promise((r) => setTimeout(r, 300))
 
       const result = await rec.stop()
       recRef.current = null
@@ -288,7 +302,7 @@ export default function App() {
     cancelRef.current?.()
     if (recRef.current) await recRef.current.stop()
     engine.pause()
-    engine.setSpeakersMuted(false)
+    if (engine.loaded) engine.setSpeakersMuted(false)
     setExp({ phase: 'idle' })
   }
 

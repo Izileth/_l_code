@@ -110,11 +110,13 @@ export class AudioEngine {
 
   /** Silencia só as caixas de som; a gravação continua recebendo o áudio. */
   setSpeakersMuted(muted: boolean) {
+    if (!this.loaded) return // sem áudio carregado, não há grafo para silenciar
     this.ensureGraph()
     this.gain!.gain.value = muted ? 0 : 1
   }
 
-  getRecordingStream(): MediaStream {
+  getRecordingStream(): MediaStream | null {
+    if (!this.loaded) return null
     this.ensureGraph()
     return this.dest!.stream
   }
