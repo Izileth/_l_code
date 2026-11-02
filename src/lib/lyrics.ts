@@ -138,6 +138,19 @@ export function stripAllTags(raw: string): string {
     .join('\n')
 }
 
+/** Calcula a duração de referência quando o usuário deseja exportar apenas a letra */
+export function resolveLyricsDuration(
+  parsed: ParsedLine[],
+  totalAudioDuration: number,
+  lyricsOnly: boolean,
+): number {
+  if (!lyricsOnly) return totalAudioDuration
+  const customTimes = parsed.filter((l) => l.time !== null).map((l) => l.time!)
+  if (!customTimes.length) return 0
+  const maxCustom = Math.max(...customTimes)
+  return maxCustom + 4
+}
+
 export function fmtTime(t: number): string {
   if (!isFinite(t) || t < 0) t = 0
   const m = Math.floor(t / 60)

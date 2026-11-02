@@ -1,7 +1,7 @@
 import { useEffect, useRef, type RefObject } from 'react'
 import type { AudioEngine } from '../lib/audio'
 import { H, LyricCodeRenderer, W } from '../lib/renderer'
-import { BARS, type CodeLine, type Levels, type RenderOptions, type Theme } from '../lib/types'
+import type { CodeLine, RenderOptions, Theme } from '../lib/types'
 
 export interface PreviewProps {
   canvasRef: RefObject<HTMLCanvasElement | null>
@@ -27,7 +27,6 @@ export function Preview(props: PreviewProps) {
     canvas.height = H
 
     const renderer = new LyricCodeRenderer()
-    const demo: Levels = { bars: new Float32Array(BARS), level: 0, bass: 0, beat: 0 }
     let demoT = 0
     let last = performance.now()
     let raf = 0
@@ -43,43 +42,39 @@ export function Preview(props: PreviewProps) {
       last = nowMs
       const now = nowMs / 1000
 
+      p.engine.update(dt)
+
       let t: number
-      let levels: Levels
-      let total: number
+      const total = p.demoTotal
 
       if (p.engine.loaded) {
-        p.engine.update(dt)
         t = p.engine.time
-        levels = p.engine.levels
-        total = p.engine.duration
       } else {
-        // modo demonstração: relógio e espectro sintéticos
-        demoT += dt
-        if (demoT > p.demoTotal) {
-          demoT = 0
-          renderer.reset()
+        if (p.exporting || !p.engine.paused) {
+          t = p.engine.time
+        } else {
+          // modo demonstração: relógio sintético que faz loop quando ocioso
+          demoT += dt
+          if (demoT > p.demoTotal) {
+            demoT = 0
+            renderer.reset()
+          }
+          t = demoT
         }
-        t = demoT
-        for (let i = 0; i < BARS; i++) {
-          demo.bars[i] = Math.min(
-            1,
-            0.2 + 0.5 * Math.abs(Math.sin(now * 2.1 + i * 0.45)) * (0.65 + 0.35 * Math.sin(now * 0.9)),
-          )
-        }
-        let sum = 0
-        for (let i = 0; i < BARS; i++) sum += demo.bars[i]
-        demo.level = sum / BARS
-        demo.beat = Math.pow(Math.max(0, Math.sin(now * Math.PI * 2 * 1.8)), 8)
-        levels = demo
-        total = p.demoTotal
       }
 
-      renderer.render(ctx, p.lines, p.theme, { ...p.opts, total, showGuides: p.opts.showGuides && !p.exporting }, {
-        t,
-        dt,
-        now,
-        levels,
-      })
+      renderer.render(
+        ctx,
+        p.lines,
+        p.theme,
+        { ...p.opts, total, showGuides: p.opts.showGuides && !p.exporting },
+        {
+          t,
+          dt,
+          now,
+          levels: p.engine.levels,
+        },
+      )
     }
     raf = requestAnimationFrame(loop)
     return () => cancelAnimationFrame(raf)

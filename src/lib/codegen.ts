@@ -132,6 +132,7 @@ export interface BuildOptions {
   indent: 2 | 4
   sections: boolean
   duration: number
+  lyricsOnly?: boolean
 }
 
 export interface BuildResult {
@@ -393,7 +394,10 @@ export function buildCode(
 
   // ── rodapé ─────────────────────────────────────────────────
   const lastStart = parsed.length ? times[times.length - 1] : 3
-  const s0 = o.duration > 0 ? Math.max(lastStart + 2.2, o.duration - 2.6) : lastStart + 3
+  const s0 =
+    o.duration > 0 && !o.lyricsOnly
+      ? Math.max(lastStart + 2.2, o.duration - 2.6)
+      : lastStart + 2.4
   lines.push(stat('', s0, s0))
   if (terminal) {
     lines.push(

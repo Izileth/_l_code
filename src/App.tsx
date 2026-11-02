@@ -7,6 +7,7 @@ import {
   fmtTime,
   parseLyrics,
   removeTag,
+  resolveLyricsDuration,
   resolveTimes,
   setTag,
   stripAllTags,
