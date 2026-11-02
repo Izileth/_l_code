@@ -7,11 +7,14 @@ export interface ParsedLine {
   stanza: number
   /** rótulo da estrofe, ex.: [Refrão] */
   label?: string
+  /** dica de estilo/palavra-chave, ex.: {log}, {sing}, {push}, etc. */
+  styleHint?: string
 }
 
 const TAG = /^\s*\[(\d{1,3}):(\d{2})(?:[.:](\d{1,3}))?\]\s*/
 const META = /^\s*\[[A-Za-z]+:[^\]]*\]\s*$/
 const SECTION = /^\s*\[([^\]\d][^\]]*)\]\s*$/
+const STYLE_TAG = /^\s*\{([a-zA-Z_.]+)\}\s*/
 
 export function parseLyrics(raw: string): ParsedLine[] {
   const out: ParsedLine[] = []
@@ -28,8 +31,27 @@ export function parseLyrics(raw: string): ParsedLine[] {
       return
     }
 
-    const m = line.match(TAG)
-    const text = (m ? line.slice(m[0].length) : line).trim()
+    let text = line.trim()
+    let time: number | null = null
+    let styleHint: string | undefined
+
+    // Suporta [00:04.20] e {sing} em qualquer ordem no início do verso
+    for (let pass = 0; pass < 2; pass++) {
+      const tm = text.match(TAG)
+      if (tm) {
+        const frac = tm[3] ? parseInt(tm[3], 10) / Math.pow(10, tm[3].length) : 0
+        time = parseInt(tm[1], 10) * 60 + parseInt(tm[2], 10) + frac
+        text = text.slice(tm[0].length).trim()
+        continue
+      }
+      const sm = text.match(STYLE_TAG)
+      if (sm) {
+        styleHint = sm[1].toLowerCase()
+        text = text.slice(sm[0].length).trim()
+        continue
+      }
+    }
+
     if (!text) {
       if (out.length) pendingBreak = true
       return
@@ -43,12 +65,7 @@ export function parseLyrics(raw: string): ParsedLine[] {
     const label = out.length === 0 || newStanza ? pendingLabel : undefined
     pendingLabel = undefined
 
-    let time: number | null = null
-    if (m) {
-      const frac = m[3] ? parseInt(m[3], 10) / Math.pow(10, m[3].length) : 0
-      time = parseInt(m[1], 10) * 60 + parseInt(m[2], 10) + frac
-    }
-    out.push({ rawIndex, text, time, stanza, label })
+    out.push({ rawIndex, text, time, stanza, label, styleHint })
   })
   return out
 }

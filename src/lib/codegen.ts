@@ -13,6 +13,12 @@ export interface CallStyle {
 const p = (t: string): Token => ({ t, k: 'plain' })
 
 export const CALL_STYLES: Record<CallStyleId, CallStyle> = {
+  mixed: {
+    label: '✨ Mixar palavras-chave (dinâmico)',
+    open: [{ t: 'print', k: 'fn' }, p('(')],
+    close: ')',
+    quote: true,
+  },
   print: { label: 'print("…")', open: [{ t: 'print', k: 'fn' }, p('(')], close: ')', quote: true },
   log: {
     label: 'console.log("…")',
@@ -41,6 +47,36 @@ export const CALL_STYLES: Record<CallStyleId, CallStyle> = {
   push: {
     label: 'lyrics.push("…")',
     open: [p('lyrics'), p('.'), { t: 'push', k: 'fn' }, p('(')],
+    close: ')',
+    quote: true,
+  },
+  const_js: {
+    label: 'const verse = "…"',
+    open: [{ t: 'const', k: 'kw' }, p(' verse = ')],
+    close: '',
+    quote: true,
+  },
+  let_js: {
+    label: 'let verse = "…"',
+    open: [{ t: 'let', k: 'kw' }, p(' verse = ')],
+    close: '',
+    quote: true,
+  },
+  emit_js: {
+    label: 'emit("…")',
+    open: [{ t: 'emit', k: 'fn' }, p('(')],
+    close: ')',
+    quote: true,
+  },
+  var_py: {
+    label: 'verse = "…"',
+    open: [p('verse = ')],
+    close: '',
+    quote: true,
+  },
+  emit_py: {
+    label: 'emit("…")',
+    open: [{ t: 'emit', k: 'fn' }, p('(')],
     close: ')',
     quote: true,
   },
@@ -92,6 +128,71 @@ export function toVarName(artist: string): string {
   return name
 }
 
+export function resolveLineStyle(
+  styleHint: string | undefined,
+  baseStyle: CallStyleId,
+  isJs: boolean,
+  terminal: boolean,
+  stanza: number,
+  lineInStanza: number,
+): CallStyleId {
+  if (terminal) return 'out'
+
+  // Tag explícita no verso, ex: {log}, {sing}, {push}, etc.
+  if (styleHint) {
+    const hint = styleHint.toLowerCase()
+    if (isJs) {
+      if (hint === 'log' || hint === 'console' || hint === 'print') return 'log'
+      if (hint === 'sing' || hint === 'sing_js' || hint === 'this.sing') return 'sing_js'
+      if (hint === 'push' || hint === 'append') return 'push'
+      if (hint === 'const' || hint === 'let' || hint === 'var') return 'const_js'
+      if (hint === 'emit' || hint === 'play') return 'emit_js'
+      if (hint === 'yield') return 'yield'
+    } else {
+      if (hint === 'print' || hint === 'log' || hint === 'console') return 'print'
+      if (hint === 'sing' || hint === 'sing_py' || hint === 'self.sing') return 'sing'
+      if (hint === 'append' || hint === 'push') return 'append'
+      if (hint === 'var' || hint === 'const' || hint === 'let') return 'var_py'
+      if (hint === 'emit' || hint === 'play') return 'emit_py'
+      if (hint === 'yield') return 'yield'
+    }
+  }
+
+  // Se o usuário selecionou um estilo fixo específico
+  if (baseStyle !== 'mixed') {
+    if (isJs) {
+      if (baseStyle === 'print') return 'log'
+      if (baseStyle === 'sing') return 'sing_js'
+      if (baseStyle === 'append') return 'push'
+      if (baseStyle === 'var_py') return 'const_js'
+      if (baseStyle === 'emit_py') return 'emit_js'
+      return baseStyle
+    } else {
+      if (baseStyle === 'log') return 'print'
+      if (baseStyle === 'sing_js') return 'sing'
+      if (baseStyle === 'push') return 'append'
+      if (baseStyle === 'const_js' || baseStyle === 'let_js') return 'var_py'
+      if (baseStyle === 'emit_js') return 'emit_py'
+      return baseStyle
+    }
+  }
+
+  // Modo 'mixed' dinâmico: varia as palavras-chave a cada trecho/linha
+  if (isJs) {
+    const pool =
+      stanza % 2 === 0
+        ? (['const_js', 'sing_js', 'push', 'log'] as const)
+        : (['log', 'sing_js', 'emit_js', 'yield'] as const)
+    return pool[lineInStanza % pool.length]
+  } else {
+    const pool =
+      stanza % 2 === 0
+        ? (['var_py', 'sing', 'append', 'print'] as const)
+        : (['print', 'sing', 'emit_py', 'yield'] as const)
+    return pool[lineInStanza % pool.length]
+  }
+}
+
 export function buildCode(
   parsed: ParsedLine[],
   times: number[],
@@ -100,17 +201,6 @@ export function buildCode(
 ): BuildResult {
   const terminal = o.format === 'terminal'
   const isJs = o.format === 'javascript'
-  let style: CallStyleId = terminal ? 'out' : o.style === 'out' ? (isJs ? 'log' : 'print') : o.style
-  if (isJs) {
-    if (style === 'print') style = 'log'
-    else if (style === 'sing') style = 'sing_js'
-    else if (style === 'append') style = 'push'
-  } else if (!terminal) {
-    if (style === 'log') style = 'print'
-    else if (style === 'sing_js') style = 'sing'
-    else if (style === 'push') style = 'append'
-  }
-  const quote = CALL_STYLES[style].quote
   const ind = ' '.repeat(o.indent)
   const className = toClassName(meta.title)
   const varName = toVarName(meta.artist)
@@ -183,12 +273,14 @@ export function buildCode(
 
   // ── letra ──────────────────────────────────────────────────
   let prevStanza = -1
+  let lineInStanza = 0
   parsed.forEach((l, i) => {
     const start = times[i]
     const nextStart = i + 1 < parsed.length ? times[i + 1] : start + 3
     const typeDur = clamp((nextStart - start) * 0.6, 0.3, 2.4)
 
     if (l.stanza !== prevStanza) {
+      lineInStanza = 0
       if (prevStanza !== -1) lines.push(stat('', start - 0.7, start - 0.7))
       if (o.sections) {
         const label = l.label ?? `Verso ${l.stanza + 1}`
@@ -203,16 +295,20 @@ export function buildCode(
       prevStanza = l.stanza
     }
 
+    const lineStyle = resolveLineStyle(l.styleHint, o.style, isJs, terminal, l.stanza, lineInStanza)
+    const quote = CALL_STYLES[lineStyle]?.quote ?? true
+
     lines.push({
       kind: 'lyric',
       lyric: {
         text: quote ? esc(l.text) : l.text,
         indent: terminal ? 0 : o.indent * 2,
-        style,
+        style: lineStyle,
       },
       start,
       end: start + typeDur,
     })
+    lineInStanza++
   })
 
   // ── rodapé ─────────────────────────────────────────────────

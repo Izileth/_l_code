@@ -4,7 +4,7 @@ const KEYWORDS = new Set([
   // Python
   'import', 'from', 'class', 'def', 'return', 'yield', 'if', 'else', 'elif', 'for', 'in',
   'while', 'await', 'async', 'as', 'with', 'lambda', 'pass', 'True', 'False', 'None',
-  'and', 'or', 'not',
+  'and', 'or', 'not', 'self',
   // JavaScript
   'const', 'let', 'var', 'function', 'new', 'this', 'constructor', 'export', 'default',
   'true', 'false', 'null', 'undefined', 'typeof', 'instanceof', 'void', 'delete', 'throw',

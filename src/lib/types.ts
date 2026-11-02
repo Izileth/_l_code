@@ -19,6 +19,7 @@ export type FormatId = 'python' | 'terminal' | 'javascript'
 
 /** 'out' = texto puro (usado no formato terminal). */
 export type CallStyleId =
+  | 'mixed'
   | 'print'
   | 'sing'
   | 'append'
@@ -27,6 +28,11 @@ export type CallStyleId =
   | 'log'
   | 'sing_js'
   | 'push'
+  | 'const_js'
+  | 'let_js'
+  | 'emit_js'
+  | 'var_py'
+  | 'emit_py'
 
 export interface LyricPayload {
   text: string

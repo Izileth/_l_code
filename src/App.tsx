@@ -56,7 +56,7 @@ export default function App() {
 
   const [codeFormat, setCodeFormat] = useState<FormatId>('terminal')
   const [themeId, setThemeId] = useState('shell')
-  const [style, setStyle] = useState<CallStyleId>('print')
+  const [style, setStyle] = useState<CallStyleId>('mixed')
   const [indent, setIndent] = useState<2 | 4>(4)
   const [fontSize, setFontSize] = useState(42)
   const [spectrum, setSpectrum] = useState(false)
@@ -96,11 +96,9 @@ export default function App() {
     setCodeFormat(f)
     setSpectrum(f !== 'terminal')
     if (f === 'javascript') {
-      setThemeId('javascript')
-      setStyle('log')
+      if (themeId === 'shell' || themeId === 'preto') setThemeId('javascript')
     } else if (f === 'python') {
       if (themeId === 'javascript' || themeId === 'shell') setThemeId('preto')
-      if (style === 'log' || style === 'sing_js' || style === 'push') setStyle('print')
     } else if (f === 'terminal') {
       if (themeId === 'preto' || themeId === 'javascript') setThemeId('shell')
     }
@@ -348,8 +346,8 @@ export default function App() {
             footer={
               <>
                 Um verso por linha. Linha em branco separa estrofes e <code className="font-mono">[Refrão]</code> nomeia a
-                estrofe. Versos com <code className="font-mono">[mm:ss.xx]</code> usam esse tempo; os demais são
-                distribuídos pela duração do áudio.
+                estrofe. Versos com <code className="font-mono">[mm:ss.xx]</code> usam esse tempo. Você pode mixar estilos
+                automaticamente ou usar tags como <code className="font-mono">{'{log}'}</code>, <code className="font-mono">{'{sing}'}</code>, <code className="font-mono">{'{push}'}</code>, <code className="font-mono">{'{const}'}</code> em cada verso.
               </>
             }
           >
@@ -459,8 +457,8 @@ export default function App() {
                     aria-label="Forma de cada verso"
                   >
                     {(codeFormat === 'javascript'
-                      ? (['log', 'sing_js', 'push', 'yield'] as CallStyleId[])
-                      : (['print', 'sing', 'append', 'yield'] as CallStyleId[])
+                      ? (['mixed', 'log', 'sing_js', 'push', 'const_js', 'emit_js', 'yield'] as CallStyleId[])
+                      : (['mixed', 'print', 'sing', 'append', 'var_py', 'emit_py', 'yield'] as CallStyleId[])
                     ).map((id) => (
                       <option key={id} value={id}>
                         {CALL_STYLES[id].label}
