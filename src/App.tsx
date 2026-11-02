@@ -66,6 +66,8 @@ export default function App() {
   const [guides, setGuides] = useState(true)
 
   const [fps, setFps] = useState(30)
+  const [recordAudio, setRecordAudio] = useState(true)
+  const [exportDuration, setExportDuration] = useState<'lyrics' | 'full'>('lyrics')
   const [muteExport, setMuteExport] = useState(true)
   const [exp, setExp] = useState<ExportState>({ phase: 'idle' })
 
@@ -75,12 +77,26 @@ export default function App() {
   const theme = getTheme(themeId)
   const terminal = codeFormat === 'terminal'
   const parsed = useMemo(() => parseLyrics(text), [text])
-  const times = useMemo(() => resolveTimes(parsed, duration), [parsed, duration])
-  const built = useMemo(
-    () => buildCode(parsed, times, meta, { format: codeFormat, style, indent, sections, duration }),
-    [parsed, times, meta, codeFormat, style, indent, sections, duration],
+  const lyricsOnly = !engine.loaded || !recordAudio || exportDuration === 'lyrics'
+  const effectiveDuration = useMemo(
+    () => resolveLyricsDuration(parsed, duration, lyricsOnly),
+    [parsed, duration, lyricsOnly],
   )
-  const recFormat = useMemo(() => pickFormat(), [])
+  const times = useMemo(() => resolveTimes(parsed, effectiveDuration), [parsed, effectiveDuration])
+  const built = useMemo(
+    () =>
+      buildCode(parsed, times, meta, {
+        format: codeFormat,
+        style,
+        indent,
+        sections,
+        duration: effectiveDuration,
+        lyricsOnly,
+      }),
+    [parsed, times, meta, codeFormat, style, indent, sections, effectiveDuration, lyricsOnly],
+  )
+  const effectiveTotal = lyricsOnly ? built.total : (duration || built.total)
+  const recFormat = useMemo(() => pickFormat(recordAudio && engine.loaded), [recordAudio, engine.loaded])
   const exporting = exp.phase === 'recording'
   const syncing = syncCursor !== null
 
@@ -121,9 +137,18 @@ export default function App() {
   }
 
   const togglePlay = async () => {
-    if (!engine.loaded) return
-    if (engine.paused) await engine.play()
-    else engine.pause()
+    if (!engine.loaded && !parsed.length) return
+    if (!engine.loaded) {
+      engine.setVirtualDuration(effectiveTotal)
+    }
+    if (engine.paused) {
+      if (engine.time >= effectiveTotal && effectiveTotal > 0) {
+        engine.seek(0)
+      }
+      await engine.play()
+    } else {
+      engine.pause()
+    }
     setPlaying(!engine.paused)
   }
 
@@ -183,30 +208,55 @@ export default function App() {
   // ── exportação ─────────────────────────────────────────────
   const exportVideo = async () => {
     const canvas = canvasRef.current
-    if (!canvas || !engine.loaded) return
+    if (!canvas) return
     cancelledRef.current = false
     setExp({ phase: 'recording' })
+
+    const hasAudio = recordAudio && engine.loaded
+    const targetDuration = effectiveTotal
+
     try {
       engine.pause()
       engine.seek(0)
-      engine.setSpeakersMuted(muteExport)
-      const rec = startRecording(canvas, engine.getRecordingStream(), fps)
+      if (!engine.loaded) {
+        engine.setVirtualDuration(targetDuration)
+      }
+      engine.setSpeakersMuted(muteExport && hasAudio)
+
+      const rec = startRecording(canvas, hasAudio ? engine.getRecordingStream() : null, fps)
       recRef.current = rec
 
       const ended = new Promise<void>((resolve) => {
-        const onEnd = () => {
+        let interval: number | null = null
+
+        const cleanup = () => {
+          if (interval !== null) clearInterval(interval)
           engine.audio.removeEventListener('ended', onEnd)
+        }
+
+        const onEnd = () => {
+          cleanup()
           resolve()
         }
+
         engine.audio.addEventListener('ended', onEnd)
+
+        interval = window.setInterval(() => {
+          if (engine.time >= targetDuration) {
+            cleanup()
+            resolve()
+          }
+        }, 50)
+
         cancelRef.current = () => {
-          engine.audio.removeEventListener('ended', onEnd)
+          cleanup()
           resolve()
         }
       })
+
       await engine.play()
       await ended
-      await new Promise((r) => setTimeout(r, 600))
+      await new Promise((r) => setTimeout(r, 400))
 
       const result = await rec.stop()
       recRef.current = null
@@ -218,7 +268,8 @@ export default function App() {
         return
       }
 
-      const name = `${built.className.toLowerCase()}-reels.${result.ext}`
+      const audioSuffix = hasAudio ? '' : '-mudo'
+      const name = `${built.className.toLowerCase()}-reels${audioSuffix}.${result.ext}`
       const url = URL.createObjectURL(result.blob)
       setExp({ phase: 'done', url, ext: result.ext, size: result.blob.size, name, h264: result.h264 })
       const a = document.createElement('a')
@@ -242,8 +293,8 @@ export default function App() {
   }
 
   const syncLine = syncCursor !== null ? parsed[syncCursor] : undefined
-  const progress = duration > 0 ? Math.min(1, time / duration) : 0
-  const canExport = engine.loaded && !syncing && !!recFormat
+  const progress = effectiveTotal > 0 ? Math.min(1, time / effectiveTotal) : 0
+  const canExport = !syncing && !!recFormat && (parsed.length > 0 || engine.loaded)
 
   return (
     <div className="relative min-h-screen text-white">
@@ -519,7 +570,9 @@ export default function App() {
                     ? 'Este navegador grava em MP4 com H.264/AAC, pronto para o Instagram.'
                     : `Este navegador grava em ${recFormat.ext.toUpperCase()} sem garantia de H.264. Se necessário, o app mostra como converter.`
                   : 'Este navegador não suporta gravação de vídeo. Use Chrome, Edge ou Safari recente.'}{' '}
-                A gravação acontece em tempo real, na duração da música.
+                {lyricsOnly
+                  ? 'A gravação encerra assim que o código terminar de ser escrito.'
+                  : 'A gravação acontece em tempo real, na duração da música.'}
               </>
             }
           >
@@ -534,16 +587,63 @@ export default function App() {
                 ]}
               />
             </Row>
-            <Row label="Silenciar durante a gravação">
-              <Switch label="Silenciar durante a gravação" checked={muteExport} onChange={setMuteExport} disabled={exporting} />
+            <Row
+              label="Gravar áudio no vídeo"
+              hint={
+                !engine.loaded
+                  ? 'Nenhum áudio carregado (o vídeo será exportado mudo)'
+                  : recordAudio
+                    ? 'Inclui a faixa da música no arquivo de vídeo'
+                    : 'Vídeo mudo (ideal para Reels/TikTok onde a música é inserida no app)'
+              }
+            >
+              <Switch
+                label="Gravar áudio no vídeo"
+                checked={recordAudio && engine.loaded}
+                onChange={setRecordAudio}
+                disabled={!engine.loaded || exporting}
+              />
             </Row>
+            <Row
+              label="Duração do vídeo"
+              hint={
+                !engine.loaded
+                  ? `Somente o tempo da escrita do código (~${fmtTime(effectiveTotal)})`
+                  : lyricsOnly
+                    ? `Encerra logo após a letra ser escrita (~${fmtTime(effectiveTotal)}) — sem esperar o fim da música`
+                    : `Grava a música inteira (~${fmtTime(engine.duration)})`
+              }
+            >
+              <Segmented
+                value={lyricsOnly ? 'lyrics' : 'full'}
+                onChange={(v) => setExportDuration(v as 'lyrics' | 'full')}
+                disabled={!engine.loaded || !recordAudio || exporting}
+                options={[
+                  { value: 'lyrics', label: 'Somente a letra' },
+                  { value: 'full', label: 'Música inteira' },
+                ]}
+              />
+            </Row>
+            {recordAudio && engine.loaded && (
+              <Row
+                label="Silenciar na gravação"
+                hint="Muta seus alto-falantes durante a gravação para não fazer barulho"
+              >
+                <Switch
+                  label="Silenciar na gravação"
+                  checked={muteExport}
+                  onChange={setMuteExport}
+                  disabled={exporting}
+                />
+              </Row>
+            )}
             {exporting && (
               <Pane>
                 <div className="h-1 overflow-hidden rounded-full bg-white/15">
                   <div className="h-full rounded-full bg-accent transition-[width] duration-200" style={{ width: `${progress * 100}%` }} />
                 </div>
                 <p className="mt-2 text-xs text-white/45">
-                  Gravando {fmtTime(time)} de {fmtTime(duration)}. Mantenha esta aba aberta e visível.
+                  Gravando {fmtTime(time)} de {fmtTime(effectiveTotal)}. Mantenha esta aba aberta e visível.
                 </p>
               </Pane>
             )}
@@ -579,7 +679,7 @@ export default function App() {
                 engine={engine}
                 lines={built.lines}
                 theme={theme}
-                demoTotal={built.total}
+                demoTotal={effectiveTotal}
                 exporting={exporting}
                 opts={{
                   fontSize,
@@ -594,7 +694,7 @@ export default function App() {
                       : `python ${built.varName}.py`,
                 }}
               />
-              {engine.loaded && !playing && time < 0.05 && !exporting && (
+              {!playing && time < 0.05 && !exporting && (
                 <button
                   onClick={togglePlay}
                   aria-label="Reproduzir"
@@ -617,7 +717,7 @@ export default function App() {
             <Btn
               variant="glass"
               onClick={togglePlay}
-              disabled={!engine.loaded || exporting}
+              disabled={(!engine.loaded && !parsed.length) || exporting}
               aria-label={playing ? 'Pausar' : 'Reproduzir'}
               className="!h-9 !w-9 !p-0"
             >
@@ -625,11 +725,11 @@ export default function App() {
             </Btn>
             <Slider
               label="Posição da música"
-              value={Math.min(time, duration || 1)}
+              value={Math.min(time, effectiveTotal || 1)}
               min={0}
-              max={duration || 1}
+              max={effectiveTotal || 1}
               step={0.01}
-              disabled={!engine.loaded || exporting}
+              disabled={(!engine.loaded && !parsed.length) || exporting}
               onChange={(v) => {
                 engine.seek(v)
                 setTime(v)
@@ -637,7 +737,7 @@ export default function App() {
               className="min-w-0 flex-1"
             />
             <span className="w-[88px] text-right text-xs tabular-nums text-white/50">
-              {fmtTime(time)} / {fmtTime(duration)}
+              {fmtTime(time)} / {fmtTime(effectiveTotal)}
             </span>
           </div>
         </aside>
