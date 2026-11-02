@@ -191,7 +191,7 @@ export class LyricCodeRenderer {
     const bold = `700 ${o.fontSize}px ${FONT_FAMILY}`
     const top = CODE_TOP
 
-    this.drawBackdrop(ctx, theme, levels, o.clean)
+    this.drawBackdrop(ctx, theme)
 
     // ── linha ativa e posição do cursor ───────────────────────
     let active = 0
@@ -239,16 +239,17 @@ export class LyricCodeRenderer {
       const reveal = revealOf(i)
       if (reveal <= 0) continue
 
-      // foco: a linha atual brilha, as anteriores esmaecem com a distância
+      // foco: a linha atual brilha com foco nas palavras escritas, as anteriores esmaecem
       const dist = active - i
-      const targetA = o.clean || inIntro || dist <= 0 ? 1 : Math.max(0.24, 0.72 - 0.1 * dist)
+      const targetA = inIntro || dist <= 0 ? 1 : Math.max(0.26, 0.76 - 0.08 * dist)
       const prevA = this.alphas[i] ?? targetA
       const alpha = prevA + (targetA - prevA) * (1 - Math.exp(-dt * 9))
       this.alphas[i] = alpha
 
-      if (i === active && !o.clean) {
+      if (i === active) {
         ctx.shadowColor = theme.glow
-        ctx.shadowBlur = 4 + 40 * (0.45 * levels.level + 0.8 * levels.beat)
+        // Brilho elegante concentrado nas palavras escritas, e não na tela do vídeo
+        ctx.shadowBlur = 5 + 14 * (0.5 * levels.level + 0.5 * levels.beat)
       } else {
         ctx.shadowBlur = 0
       }
@@ -299,21 +300,15 @@ export class LyricCodeRenderer {
     if (blinkOn && cy > top - lineH && cy < CODE_BOTTOM + lineH) {
       const cx = MARGIN_X + gutter + cur.col * charW
       ctx.fillStyle = theme.cursor
-      if (o.clean) {
-        // bloco sólido, sem brilho nem pulso
-        ctx.globalAlpha = edgeOf(cy)
-        ctx.fillRect(cx, cy - o.fontSize * 0.48, charW * 0.8, o.fontSize * 0.96)
-      } else {
-        ctx.globalAlpha = edgeOf(cy) * (0.7 + 0.3 * levels.level)
-        ctx.shadowColor = theme.glow
-        ctx.shadowBlur = 12 + 20 * levels.beat
-        ctx.fillRect(cx, cy - lineH * 0.36, charW * (0.55 + 0.3 * levels.beat), lineH * 0.72)
-        ctx.shadowBlur = 0
-      }
+      ctx.globalAlpha = edgeOf(cy) * (0.8 + 0.2 * levels.level)
+      ctx.shadowColor = theme.glow
+      ctx.shadowBlur = 6 + 10 * levels.beat
+      ctx.fillRect(cx, cy - lineH * 0.36, charW * (0.55 + 0.25 * levels.beat), lineH * 0.72)
+      ctx.shadowBlur = 0
       ctx.globalAlpha = 1
     }
 
-    // ── espectro e status (o estilo limpo não mostra nenhum dos dois) ──
+    // ── espectro e status ──
     if (o.spectrum) this.drawSpectrum(ctx, theme, levels)
     if (!o.clean) {
       ctx.font = `400 26px ${FONT_FAMILY}`
@@ -329,18 +324,11 @@ export class LyricCodeRenderer {
     if (o.showGuides) this.drawGuides(ctx)
   }
 
-  /** Fundo: preto liso no estilo limpo; no outro, um brilho que respira com o áudio. */
-  private drawBackdrop(ctx: CanvasRenderingContext2D, theme: Theme, levels: Levels, clean: boolean) {
+  /** Fundo: cor do tema nítida, mantendo a tela do vídeo sólida sem ofuscar as palavras */
+  private drawBackdrop(ctx: CanvasRenderingContext2D, theme: Theme) {
     ctx.globalAlpha = 1
     ctx.shadowBlur = 0
     ctx.fillStyle = theme.bg
-    ctx.fillRect(0, 0, W, H)
-    if (clean) return
-
-    const g = ctx.createRadialGradient(W / 2, H * 0.48, 40, W / 2, H * 0.48, H * 0.62)
-    g.addColorStop(0, hexA(theme.accent, 0.05 + levels.level * 0.2 + levels.beat * 0.12))
-    g.addColorStop(1, hexA(theme.accent, 0))
-    ctx.fillStyle = g
     ctx.fillRect(0, 0, W, H)
   }
 

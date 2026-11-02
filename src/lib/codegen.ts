@@ -80,6 +80,48 @@ export const CALL_STYLES: Record<CallStyleId, CallStyle> = {
     close: ')',
     quote: true,
   },
+  term_sudo_echo: {
+    label: '$ sudo echo "…"',
+    open: [{ t: '$ ', k: 'plain' }, { t: 'sudo ', k: 'kw' }, { t: 'echo ', k: 'fn' }],
+    close: '',
+    quote: true,
+  },
+  term_echo: {
+    label: '$ echo "…"',
+    open: [{ t: '$ ', k: 'plain' }, { t: 'echo ', k: 'fn' }],
+    close: '',
+    quote: true,
+  },
+  term_sudo_play: {
+    label: '$ sudo play "…"',
+    open: [{ t: '$ ', k: 'plain' }, { t: 'sudo ', k: 'kw' }, { t: 'play ', k: 'ok' }],
+    close: '',
+    quote: true,
+  },
+  term_wall: {
+    label: '$ sudo wall "…"',
+    open: [{ t: '$ ', k: 'plain' }, { t: 'sudo ', k: 'kw' }, { t: 'wall ', k: 'attr' }],
+    close: '',
+    quote: true,
+  },
+  term_printf: {
+    label: '$ printf "…\\n"',
+    open: [{ t: '$ ', k: 'plain' }, { t: 'printf ', k: 'fn' }],
+    close: '\\n',
+    quote: true,
+  },
+  term_export: {
+    label: '$ export VERSE="…"',
+    open: [{ t: '$ ', k: 'plain' }, { t: 'export ', k: 'kw' }, { t: 'VERSE=', k: 'attr' }],
+    close: '',
+    quote: true,
+  },
+  term_tee: {
+    label: '$ sudo tee <<< "…"',
+    open: [{ t: '$ ', k: 'plain' }, { t: 'sudo ', k: 'kw' }, { t: 'tee <<< ', k: 'fn' }],
+    close: '',
+    quote: true,
+  },
   yield: { label: 'yield ("…")', open: [{ t: 'yield', k: 'kw' }, p(' (')], close: ')', quote: true },
   out: { label: 'texto puro', open: [], close: '', quote: false },
 }
@@ -136,7 +178,43 @@ export function resolveLineStyle(
   stanza: number,
   lineInStanza: number,
 ): CallStyleId {
-  if (terminal) return 'out'
+  // Modo Terminal (Linux)
+  if (terminal) {
+    if (styleHint) {
+      const hint = styleHint.toLowerCase()
+      if (hint === 'sudo' || hint === 'sudo_echo') return 'term_sudo_echo'
+      if (hint === 'echo') return 'term_echo'
+      if (hint === 'play' || hint === 'sudo_play') return 'term_sudo_play'
+      if (hint === 'wall' || hint === 'sudo_wall') return 'term_wall'
+      if (hint === 'printf') return 'term_printf'
+      if (hint === 'export') return 'term_export'
+      if (hint === 'tee' || hint === 'sudo_tee') return 'term_tee'
+      if (hint === 'out' || hint === 'plain' || hint === 'raw') return 'out'
+    }
+
+    if (baseStyle !== 'mixed') {
+      if (
+        baseStyle === 'term_sudo_echo' ||
+        baseStyle === 'term_echo' ||
+        baseStyle === 'term_sudo_play' ||
+        baseStyle === 'term_wall' ||
+        baseStyle === 'term_printf' ||
+        baseStyle === 'term_export' ||
+        baseStyle === 'term_tee' ||
+        baseStyle === 'out'
+      ) {
+        return baseStyle
+      }
+      return 'term_sudo_echo'
+    }
+
+    // Mix dinâmico com terminologia Linux autêntica (sudo, echo, wall, tee, etc.)
+    const pool =
+      stanza % 2 === 0
+        ? (['term_sudo_play', 'term_echo', 'term_tee', 'term_printf'] as const)
+        : (['term_sudo_echo', 'term_wall', 'term_export', 'term_sudo_play'] as const)
+    return pool[lineInStanza % pool.length]
+  }
 
   // Tag explícita no verso, ex: {log}, {sing}, {push}, etc.
   if (styleHint) {
@@ -148,6 +226,7 @@ export function resolveLineStyle(
       if (hint === 'const' || hint === 'let' || hint === 'var') return 'const_js'
       if (hint === 'emit' || hint === 'play') return 'emit_js'
       if (hint === 'yield') return 'yield'
+      if (hint === 'out') return 'out'
     } else {
       if (hint === 'print' || hint === 'log' || hint === 'console') return 'print'
       if (hint === 'sing' || hint === 'sing_py' || hint === 'self.sing') return 'sing'
@@ -155,6 +234,7 @@ export function resolveLineStyle(
       if (hint === 'var' || hint === 'const' || hint === 'let') return 'var_py'
       if (hint === 'emit' || hint === 'play') return 'emit_py'
       if (hint === 'yield') return 'yield'
+      if (hint === 'out') return 'out'
     }
   }
 
@@ -228,8 +308,8 @@ export function buildCode(
     const head: Token[][] = [
       [
         { t: '$ ', k: 'plain' },
-        { t: 'play', k: 'ok' },
-        { t: ' ', k: 'plain' },
+        { t: 'sudo ', k: 'kw' },
+        { t: 'systemctl start ', k: 'fn' },
         { t: `"${esc(short(meta.title))}"`, k: 'str' },
       ],
       [
@@ -319,14 +399,15 @@ export function buildCode(
     lines.push(
       toks(
         [
-          { t: 'fim da faixa ', k: 'plain' },
-          { t: '(ok.)', k: 'ok' },
+          { t: '[system] ', k: 'com' },
+          { t: 'faixa concluída com sucesso ', k: 'plain' },
+          { t: '(status: 0)', k: 'ok' },
         ],
         s0,
         s0 + 0.7,
       ),
     )
-    lines.push(toks([{ t: '$ ', k: 'plain' }], s0 + 0.9, s0 + 1.0))
+    lines.push(toks([{ t: '$ ', k: 'plain' }, { t: 'exit 0', k: 'fn' }], s0 + 0.9, s0 + 1.0))
   } else if (isJs) {
     lines.push(stat(`${ind}}`, s0, s0 + 0.2))
     lines.push(stat('}', s0 + 0.2, s0 + 0.4))

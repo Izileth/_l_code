@@ -10,6 +10,8 @@ const KEYWORDS = new Set([
   'true', 'false', 'null', 'undefined', 'typeof', 'instanceof', 'void', 'delete', 'throw',
   'try', 'catch', 'finally', 'switch', 'case', 'break', 'continue', 'super', 'extends',
   'of',
+  // Linux / Bash
+  'sudo', 'echo', 'printf', 'wall', 'cat', 'grep', 'curl', 'tee',
 ])
 
 const SOURCE =

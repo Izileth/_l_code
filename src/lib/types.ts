@@ -33,6 +33,13 @@ export type CallStyleId =
   | 'emit_js'
   | 'var_py'
   | 'emit_py'
+  | 'term_sudo_echo'
+  | 'term_echo'
+  | 'term_sudo_play'
+  | 'term_wall'
+  | 'term_printf'
+  | 'term_export'
+  | 'term_tee'
 
 export interface LyricPayload {
   text: string

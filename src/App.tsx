@@ -347,7 +347,7 @@ export default function App() {
               <>
                 Um verso por linha. Linha em branco separa estrofes e <code className="font-mono">[Refrão]</code> nomeia a
                 estrofe. Versos com <code className="font-mono">[mm:ss.xx]</code> usam esse tempo. Você pode mixar estilos
-                automaticamente ou usar tags como <code className="font-mono">{'{log}'}</code>, <code className="font-mono">{'{sing}'}</code>, <code className="font-mono">{'{push}'}</code>, <code className="font-mono">{'{const}'}</code> em cada verso.
+                automaticamente ou usar tags como <code className="font-mono">{'{sudo}'}</code>, <code className="font-mono">{'{echo}'}</code>, <code className="font-mono">{'{wall}'}</code>, <code className="font-mono">{'{log}'}</code>, <code className="font-mono">{'{sing}'}</code> em cada verso.
               </>
             }
           >
@@ -448,35 +448,45 @@ export default function App() {
                 ))}
               </Select>
             </Row>
+            <Row label="Cada verso como">
+              <Select
+                value={style}
+                onChange={(e) => setStyle(e.target.value as CallStyleId)}
+                aria-label="Forma de cada verso"
+              >
+                {(terminal
+                  ? ([
+                      'mixed',
+                      'term_sudo_echo',
+                      'term_echo',
+                      'term_sudo_play',
+                      'term_wall',
+                      'term_printf',
+                      'term_export',
+                      'term_tee',
+                      'out',
+                    ] as CallStyleId[])
+                  : codeFormat === 'javascript'
+                    ? (['mixed', 'log', 'sing_js', 'push', 'const_js', 'emit_js', 'yield'] as CallStyleId[])
+                    : (['mixed', 'print', 'sing', 'append', 'var_py', 'emit_py', 'yield'] as CallStyleId[])
+                ).map((id) => (
+                  <option key={id} value={id}>
+                    {CALL_STYLES[id].label}
+                  </option>
+                ))}
+              </Select>
+            </Row>
             {!terminal && (
-              <>
-                <Row label="Cada verso como">
-                  <Select
-                    value={style}
-                    onChange={(e) => setStyle(e.target.value as CallStyleId)}
-                    aria-label="Forma de cada verso"
-                  >
-                    {(codeFormat === 'javascript'
-                      ? (['mixed', 'log', 'sing_js', 'push', 'const_js', 'emit_js', 'yield'] as CallStyleId[])
-                      : (['mixed', 'print', 'sing', 'append', 'var_py', 'emit_py', 'yield'] as CallStyleId[])
-                    ).map((id) => (
-                      <option key={id} value={id}>
-                        {CALL_STYLES[id].label}
-                      </option>
-                    ))}
-                  </Select>
-                </Row>
-                <Row label="Indentação">
-                  <Segmented
-                    value={indent}
-                    onChange={setIndent}
-                    options={[
-                      { value: 2, label: '2' },
-                      { value: 4, label: '4' },
-                    ]}
-                  />
-                </Row>
-              </>
+              <Row label="Indentação">
+                <Segmented
+                  value={indent}
+                  onChange={setIndent}
+                  options={[
+                    { value: 2, label: '2' },
+                    { value: 4, label: '4' },
+                  ]}
+                />
+              </Row>
             )}
             <Row label="Tamanho do texto">
               <div className="flex w-52 items-center gap-3">
@@ -574,9 +584,13 @@ export default function App() {
                   fontSize,
                   lineNumbers,
                   showGuides: guides,
-                  clean: terminal,
+                  clean: false,
                   spectrum,
-                  statusLeft: `$ python ${built.varName}.py`,
+                  statusLeft: terminal
+                    ? `$ ${built.varName}.sh`
+                    : codeFormat === 'javascript'
+                      ? `node ${built.varName}.js`
+                      : `python ${built.varName}.py`,
                 }}
               />
               {engine.loaded && !playing && time < 0.05 && !exporting && (
