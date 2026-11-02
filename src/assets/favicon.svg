@@ -1,19 +1,39 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
-  <!-- Fundo escuro em formato Squircle (Ícone de App / Favicon) -->
-  <rect width="512" height="512" rx="112" fill="#000000" />
-  
-  <!-- Símbolo Vetorial: Anel C com Brilho / Estrela Integrada -->
-  <path d="
-    M 256 96
-    A 160 160 0 1 0 416 256
-    L 358 256
-    C 360 215 375 188 400 170
-    C 368 150 346 130 334 108
-    C 318 132 310 160 308 184
-    C 295 165 272 152 256 152
-    L 256 170
-    A 86 86 0 1 1 342 256
-    L 358 256
-    Z
-  " fill="#FFFFFF" />
+  <defs>
+    <!-- Gradiente vibrante inspirado na presença do YouTube e Google -->
+    <linearGradient id="codeOnGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FF0033" />
+      <stop offset="100%" stop-color="#D90026" />
+    </linearGradient>
+  </defs>
+
+  <!-- Fundo transparente; o formato da tela/badge preenche a aba com máxima presença -->
+  <rect x="20" y="44" width="472" height="424" rx="108" fill="url(#codeOnGrad)" />
+
+  <!-- Símbolo Code ON: < ▶ > (Código + Play/Música) -->
+  <!-- Bracket Esquerdo < -->
+  <path
+    d="M 148 184 L 90 256 L 148 328"
+    fill="none"
+    stroke="#FFFFFF"
+    stroke-width="44"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+
+  <!-- Play Central ▶ (Geometria fluida com vértices suaves) -->
+  <path
+    d="M 206 186 C 206 174 219 166 230 173 L 310 243 C 319 250 319 262 310 269 L 230 339 C 219 346 206 338 206 326 Z"
+    fill="#FFFFFF"
+  />
+
+  <!-- Bracket Direito > -->
+  <path
+    d="M 364 184 L 422 256 L 364 328"
+    fill="none"
+    stroke="#FFFFFF"
+    stroke-width="44"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
 </svg>
