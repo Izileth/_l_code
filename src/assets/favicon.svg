@@ -1,25 +1,19 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
-  <!-- Fundo escuro conforme a imagem de referência -->
-  <rect width="512" height="512" fill="#000000" />
+  <!-- Fundo escuro em formato Squircle (Ícone de App / Favicon) -->
+  <rect width="512" height="512" rx="112" fill="#000000" />
   
-  <!-- 
-    Caminho (path) da forma branca central:
-    M: Move para o ponto inicial (topo esquerdo)
-    C: Curva de Bézier Cúbica (cria o topo suave)
-    L: Linha reta até a base direita
-    C: Curva de Bézier Cúbica (arredonda o "pé" direito)
-    Q: Curva Quadrática (cria o arco interno côncavo da base)
-    C: Curva de Bézier Cúbica (arredonda o "pé" esquerdo)
-    Z: Fecha o caminho de volta ao topo
-  -->
+  <!-- Símbolo Vetorial: Anel C com Brilho / Estrela Integrada -->
   <path d="
-    M 226 150
-    C 238 120, 274 120, 286 150
-    L 366 330
-    C 382 366, 350 398, 318 382
-    Q 256 340, 194 382
-    C 162 398, 130 366, 146 330
-    Z" 
-    fill="#ffffff" 
-  />
+    M 256 96
+    A 160 160 0 1 0 416 256
+    L 358 256
+    C 360 215 375 188 400 170
+    C 368 150 346 130 334 108
+    C 318 132 310 160 308 184
+    C 295 165 272 152 256 152
+    L 256 170
+    A 86 86 0 1 1 342 256
+    L 358 256
+    Z
+  " fill="#FFFFFF" />
 </svg>
