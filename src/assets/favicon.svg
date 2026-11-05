@@ -1,39 +1,30 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
-  <defs>
-    <!-- Gradiente vibrante inspirado na presença do YouTube e Google -->
-    <linearGradient id="codeOnGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#FF0033" />
-      <stop offset="100%" stop-color="#D90026" />
-    </linearGradient>
-  </defs>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <!--
+    LYRIC STUDIO — Favicon
+    Concept: "Code Waveform" — 5 terminal-block bars forming an audio
+    spectrum fingerprint. Reads as "music beat" at a glance and as
+    "bar chart / code blocks" at close range. Inspired by Vercel's
+    approach: solid matte dark bg, single-color white mark, geometric
+    precision, no gradients. Legible at 16×16, 32×32, 180×180.
 
-  <!-- Fundo transparente; o formato da tela/badge preenche a aba com máxima presença -->
-  <rect x="20" y="44" width="472" height="424" rx="108" fill="url(#codeOnGrad)" />
+    Grid: 32×32 — bars occupy x=4 to x=28, baseline at y=28.
+  -->
 
-  <!-- Símbolo Code ON: < ▶ > (Código + Play/Música) -->
-  <!-- Bracket Esquerdo < -->
-  <path
-    d="M 148 184 L 90 256 L 148 328"
-    fill="none"
-    stroke="#FFFFFF"
-    stroke-width="44"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-  />
+  <!-- Matte dark background -->
+  <rect width="32" height="32" rx="6" fill="#0d0d0d"/>
 
-  <!-- Play Central ▶ (Geometria fluida com vértices suaves) -->
-  <path
-    d="M 206 186 C 206 174 219 166 230 173 L 310 243 C 319 250 319 262 310 269 L 230 339 C 219 346 206 338 206 326 Z"
-    fill="#FFFFFF"
-  />
+  <!-- Waveform bars (heights reflect a musical phrase rhythm) -->
+  <!-- Bar 1 -->
+  <rect x="4"  y="20" width="4" height="8"  rx="1" fill="#ffffff"/>
+  <!-- Bar 2 -->
+  <rect x="10" y="12" width="4" height="16" rx="1" fill="#ffffff"/>
+  <!-- Bar 3 -->
+  <rect x="16" y="16" width="4" height="12" rx="1" fill="#ffffff"/>
+  <!-- Bar 4 -->
+  <rect x="22" y="6"  width="4" height="22" rx="1" fill="#ffffff"/>
+  <!-- Bar 5 -->
+  <rect x="28" y="14" width="2" height="14" rx="1" fill="#ffffff" opacity="0.55"/>
 
-  <!-- Bracket Direito > -->
-  <path
-    d="M 364 184 L 422 256 L 364 328"
-    fill="none"
-    stroke="#FFFFFF"
-    stroke-width="44"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-  />
+  <!-- Baseline hairline — references code/terminal underline convention -->
+  <rect x="4" y="29.5" width="26" height="1" rx="0.5" fill="#ffffff" opacity="0.25"/>
 </svg>
