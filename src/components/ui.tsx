@@ -6,70 +6,110 @@ import type {
   SelectHTMLAttributes,
 } from 'react'
 
-/* ── ícones (SVG, herdam currentColor) ───────────────────────── */
+/* ── Ícones Minimalistas Monocromáticos (SVG) ─────────────────── */
 
-const svg = { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round' } as const
+const svgProps = {
+  viewBox: '0 0 24 24',
+  fill: 'none',
+  stroke: 'currentColor',
+  strokeWidth: 1.75,
+  strokeLinecap: 'round' as const,
+  strokeLinejoin: 'round' as const,
+}
 
 export const IconPlay = () => (
-  <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="currentColor" aria-hidden>
-    <path d="M8 5.6v12.8a1 1 0 0 0 1.52.85l10.4-6.4a1 1 0 0 0 0-1.7L9.52 4.75A1 1 0 0 0 8 5.6Z" />
-  </svg>
-)
-export const IconPause = () => (
-  <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="currentColor" aria-hidden>
-    <rect x="6.5" y="5" width="4" height="14" rx="1.2" />
-    <rect x="13.5" y="5" width="4" height="14" rx="1.2" />
-  </svg>
-)
-export const IconDownload = () => (
-  <svg {...svg} className="h-[17px] w-[17px]" aria-hidden>
-    <path d="M12 4v11m0 0-4-4m4 4 4-4M5 19.5h14" />
-  </svg>
-)
-export const IconWave = () => (
-  <svg {...svg} className="h-6 w-6" aria-hidden>
-    <path d="M4 10v4M8 6.5v11M12 3.5v17M16 8v8M20 10.5v3" />
-  </svg>
-)
-export const IconCheck = () => (
-  <svg {...svg} className="h-4 w-4" aria-hidden>
-    <path d="m5 12.5 4.5 4.5L19 7.5" />
+  <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor" aria-hidden>
+    <path d="M8 5v14l11-7z" />
   </svg>
 )
 
-/* ── agrupamentos estilo "Ajustes" ───────────────────────────── */
+export const IconPause = () => (
+  <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor" aria-hidden>
+    <rect x="6" y="5" width="4" height="14" rx="0.5" />
+    <rect x="14" y="5" width="4" height="14" rx="0.5" />
+  </svg>
+)
+
+export const IconDownload = () => (
+  <svg {...svgProps} className="h-4 w-4" aria-hidden>
+    <path d="M12 3v12m0 0-4-4m4 4 4-4M4 20h16" />
+  </svg>
+)
+
+export const IconWave = () => (
+  <svg {...svgProps} className="h-5 w-5" aria-hidden>
+    <path d="M3 10v4M7 6v12M11 3v18M15 7v10M19 10v4M22 12v0" />
+  </svg>
+)
+
+export const IconCheck = () => (
+  <svg {...svgProps} className="h-3.5 w-3.5" aria-hidden>
+    <polyline points="20 6 9 17 4 12" />
+  </svg>
+)
+
+export const IconUpload = () => (
+  <svg {...svgProps} className="h-4 w-4" aria-hidden>
+    <path d="M12 17V5m0 0-4 4m4-4 4 4M4 20h16" />
+  </svg>
+)
+
+/* ── Estruturas Editoriais e Painéis ─────────────────────────── */
 
 export function Group({
   title,
+  index,
   action,
   footer,
   children,
 }: {
   title?: string
+  index?: string
   action?: ReactNode
   footer?: ReactNode
   children: ReactNode
 }) {
   return (
-    <section>
-      {(title || action) && (
-        <div className="mb-2 flex items-end justify-between px-4">
-          <h2 className="text-[13px] font-medium text-white/50">{title}</h2>
+    <section className="border border-[#222222] bg-[#0e0e0e] transition-colors duration-150">
+      {(title || action || index) && (
+        <div className="flex items-center justify-between border-b border-[#222222] bg-[#121212] px-4 py-2.5">
+          <div className="flex items-center gap-2">
+            {index && (
+              <span className="font-mono text-[11px] font-semibold tracking-wider text-[#666666]">
+                {index}
+              </span>
+            )}
+            <h2 className="font-mono text-[11px] font-medium tracking-wider text-[#aaaaaa] uppercase">
+              {title}
+            </h2>
+          </div>
           {action}
         </div>
       )}
-      <div className="glass divide-y divide-white/[0.07] overflow-hidden rounded-[22px]">{children}</div>
-      {footer && <p className="mt-2 px-4 text-xs leading-relaxed text-white/40">{footer}</p>}
+      <div className="divide-y divide-[#1e1e1e]">{children}</div>
+      {footer && (
+        <div className="border-t border-[#1c1c1c] bg-[#0a0a0a] px-4 py-2 text-[11px] leading-relaxed text-[#707070]">
+          {footer}
+        </div>
+      )}
     </section>
   )
 }
 
-export function Row({ label, hint, children }: { label: ReactNode; hint?: ReactNode; children?: ReactNode }) {
+export function Row({
+  label,
+  hint,
+  children,
+}: {
+  label: ReactNode
+  hint?: ReactNode
+  children?: ReactNode
+}) {
   return (
-    <div className="flex min-h-[50px] items-center justify-between gap-4 px-4 py-2.5">
-      <div className="min-w-0">
-        <div className="text-[15px] text-white/90">{label}</div>
-        {hint && <div className="mt-0.5 text-xs text-white/40">{hint}</div>}
+    <div className="flex min-h-[46px] items-center justify-between gap-4 px-4 py-2.5 hover:bg-[#121212]/50 transition-colors">
+      <div className="min-w-0 pr-2">
+        <div className="text-[13px] font-normal tracking-[-0.01em] text-[#e8e8e8]">{label}</div>
+        {hint && <div className="mt-0.5 text-[11px] leading-tight text-[#6e6e6e]">{hint}</div>}
       </div>
       {children && <div className="flex shrink-0 items-center">{children}</div>}
     </div>
@@ -77,17 +117,17 @@ export function Row({ label, hint, children }: { label: ReactNode; hint?: ReactN
 }
 
 export function Pane({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return <div className={`px-4 py-3.5 ${className}`}>{children}</div>
+  return <div className={`p-4 ${className}`}>{children}</div>
 }
 
-/* ── controles ───────────────────────────────────────────────── */
+/* ── Controles e Entradas ─────────────────────────────────────── */
 
 export function Field(props: InputHTMLAttributes<HTMLInputElement>) {
   const { className = '', ...rest } = props
   return (
     <input
       {...rest}
-      className={`w-48 max-w-full bg-transparent text-right text-[15px] text-white/60 outline-none transition placeholder:text-white/25 focus:text-white ${className}`}
+      className={`h-8 w-52 max-w-full rounded-none border border-[#262626] bg-[#141414] px-2.5 text-right font-mono text-[12px] text-[#f2f2f2] outline-none transition focus:border-[#777777] placeholder:text-[#444444] ${className}`}
     />
   )
 }
@@ -98,13 +138,13 @@ export function Select(props: SelectHTMLAttributes<HTMLSelectElement>) {
     <div className="relative">
       <select
         {...rest}
-        className={`cursor-pointer appearance-none rounded-lg bg-white/[0.09] py-1.5 pl-3 pr-8 text-[14px] text-white/90 outline-none transition hover:bg-white/[0.13] focus-visible:ring-2 focus-visible:ring-accent/60 disabled:opacity-40 [&>option]:bg-zinc-900 ${className}`}
+        className={`h-8 cursor-pointer appearance-none rounded-none border border-[#2a2a2a] bg-[#141414] py-1 pl-3 pr-8 text-[12px] font-mono text-[#e5e5e5] outline-none transition hover:border-[#444444] focus:border-[#888888] disabled:opacity-40 [&>option]:bg-[#121212] [&>option]:text-[#e0e0e0] ${className}`}
       >
         {children}
       </select>
       <svg
         viewBox="0 0 24 24"
-        className="pointer-events-none absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-white/45"
+        className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#777777]"
         fill="none"
         stroke="currentColor"
         strokeWidth="2"
@@ -112,7 +152,7 @@ export function Select(props: SelectHTMLAttributes<HTMLSelectElement>) {
         strokeLinejoin="round"
         aria-hidden
       >
-        <path d="m7 10 5 5 5-5" />
+        <path d="m6 9 6 6 6-6" />
       </svg>
     </div>
   )
@@ -130,7 +170,10 @@ export function Segmented<T extends string | number>({
   disabled?: boolean
 }) {
   return (
-    <div className={`inline-flex rounded-[10px] bg-white/[0.08] p-0.5 ${disabled ? 'opacity-40' : ''}`} role="radiogroup">
+    <div
+      className={`inline-flex border border-[#262626] bg-[#121212] p-[2px] ${disabled ? 'opacity-40 pointer-events-none' : ''}`}
+      role="radiogroup"
+    >
       {options.map((o) => {
         const on = o.value === value
         return (
@@ -141,8 +184,10 @@ export function Segmented<T extends string | number>({
             aria-checked={on}
             disabled={disabled}
             onClick={() => onChange(o.value)}
-            className={`rounded-[8px] px-3 py-1 text-[13px] font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 ${
-              on ? 'bg-white/[0.22] text-white shadow-[0_1px_3px_rgba(0,0,0,0.35)]' : 'text-white/55 hover:text-white/85'
+            className={`px-3 py-1 font-mono text-[11px] uppercase tracking-wide transition focus-visible:outline-none ${
+              on
+                ? 'bg-[#f2f2f2] text-[#080808] font-semibold'
+                : 'text-[#888888] hover:text-[#d0d0d0]'
             }`}
           >
             {o.label}
@@ -172,13 +217,17 @@ export function Switch({
       aria-label={label}
       disabled={disabled}
       onClick={() => onChange(!checked)}
-      className={`relative h-[31px] w-[51px] shrink-0 rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 disabled:opacity-40 ${
-        checked ? 'bg-[#30d158]' : 'bg-white/[0.2]'
+      className={`relative h-[22px] w-[40px] shrink-0 border transition-colors focus-visible:outline-none focus-visible:border-white disabled:opacity-30 ${
+        checked
+          ? 'border-[#f2f2f2] bg-[#f2f2f2]'
+          : 'border-[#333333] bg-[#161616]'
       }`}
     >
       <span
-        className={`absolute left-[2px] top-[2px] h-[27px] w-[27px] rounded-full bg-white shadow-[0_2px_5px_rgba(0,0,0,0.35)] transition-transform duration-200 ${
-          checked ? 'translate-x-[20px]' : ''
+        className={`absolute top-[2px] h-[16px] w-[16px] transition-transform duration-150 ${
+          checked
+            ? 'translate-x-[19px] bg-[#080808]'
+            : 'translate-x-[2px] bg-[#666666]'
         }`}
       />
     </button>
@@ -222,18 +271,23 @@ export function Slider({
 }
 
 type BtnProps = ButtonHTMLAttributes<HTMLButtonElement> & {
-  variant?: 'primary' | 'glass' | 'danger'
+  variant?: 'primary' | 'secondary' | 'glass' | 'danger'
   size?: 'sm' | 'md'
 }
 
-export function Btn({ variant = 'glass', size = 'md', className = '', ...rest }: BtnProps) {
+export function Btn({ variant = 'secondary', size = 'md', className = '', ...rest }: BtnProps) {
   const base =
-    'inline-flex shrink-0 items-center justify-center gap-1.5 rounded-full font-medium transition active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 disabled:pointer-events-none disabled:opacity-40'
-  const sizes = { sm: 'px-3 py-1 text-[13px]', md: 'px-4 py-1.5 text-[14px]' }[size]
+    'inline-flex shrink-0 items-center justify-center gap-1.5 font-mono text-[11px] uppercase tracking-wider transition active:translate-y-[1px] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white disabled:pointer-events-none disabled:opacity-35 cursor-pointer'
+  const sizes = { sm: 'h-7 px-2.5', md: 'h-8 px-3.5' }[size]
   const styles = {
-    primary: 'bg-accent text-white shadow-[0_4px_16px_rgba(10,132,255,0.35)] hover:brightness-110',
-    glass: 'bg-white/[0.11] text-white/90 hover:bg-white/[0.17]',
-    danger: 'bg-[#ff453a]/20 text-[#ff6961] hover:bg-[#ff453a]/30',
+    primary:
+      'bg-[#f2f2f2] text-[#080808] font-semibold border border-[#f2f2f2] hover:bg-white',
+    secondary:
+      'bg-[#161616] text-[#e0e0e0] border border-[#2e2e2e] hover:border-[#666666] hover:bg-[#1f1f1f]',
+    glass:
+      'bg-[#161616] text-[#e0e0e0] border border-[#2e2e2e] hover:border-[#666666] hover:bg-[#1f1f1f]',
+    danger:
+      'bg-[#220d0d] text-[#ff7777] border border-[#ff453a]/40 hover:bg-[#331414] hover:border-[#ff453a]/70',
   }[variant]
   return <button {...rest} className={`${base} ${sizes} ${styles} ${className}`} />
 }

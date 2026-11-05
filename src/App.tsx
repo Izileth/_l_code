@@ -23,6 +23,7 @@ import {
   IconDownload,
   IconPause,
   IconPlay,
+  IconUpload,
   IconWave,
   Pane,
   Row,
@@ -213,7 +214,7 @@ export default function App() {
     setExp({ phase: 'recording' })
 
     const hasAudio = recordAudio && engine.loaded
-    const targetDuration = effectiveTotal   // segundos
+    const targetDuration = effectiveTotal
 
     try {
       engine.pause()
@@ -227,11 +228,6 @@ export default function App() {
       const rec = startRecording(canvas, audioStream, fps)
       recRef.current = rec
 
-      // ─── Espera o fim da gravação ─────────────────────────────
-      // Estratégia híbrida:
-      //   • Com áudio real: ouve o evento 'ended' do audio element (fonte de verdade)
-      //   • Ambos os casos: fallback por setTimeout com margem de segurança
-      //     (o tempo real é wall-clock, não depende do engine.time avançar)
       const waitEnded = new Promise<void>((resolve) => {
         let resolved = false
         const done = () => {
@@ -240,11 +236,9 @@ export default function App() {
           resolve()
         }
 
-        // Fallback por tempo de parede: espera a duração real + 800ms de margem
         const wallTimer = window.setTimeout(done, targetDuration * 1000 + 800)
 
         if (engine.loaded) {
-          // Áudio real: evento 'ended' é o sinal mais preciso
           const onEnd = () => {
             engine.audio.removeEventListener('ended', onEnd)
             window.clearTimeout(wallTimer)
@@ -258,7 +252,6 @@ export default function App() {
             done()
           }
         } else {
-          // Sem áudio: o único critério é o timer de parede acima
           cancelRef.current = () => {
             window.clearTimeout(wallTimer)
             done()
@@ -269,7 +262,6 @@ export default function App() {
       await engine.play()
       await waitEnded
 
-      // Pequena pausa para o último chunk do MediaRecorder ser finalizado
       await new Promise((r) => setTimeout(r, 300))
 
       const result = await rec.stop()
@@ -311,82 +303,106 @@ export default function App() {
   const canExport = !syncing && !!recFormat && (parsed.length > 0 || engine.loaded)
 
   return (
-    <div className="relative min-h-screen text-white">
-      {/* fundo: malha de cor desfocada que o vidro refrata */}
-      <div className="fixed inset-0 -z-10 overflow-hidden bg-[#09090d]" aria-hidden>
-        <div className="absolute -left-48 -top-48 h-[640px] w-[640px] rounded-full bg-[#4b3bff]/30 blur-[130px]" />
-        <div className="absolute -right-40 top-[18%] h-[560px] w-[560px] rounded-full bg-[#ff3d7f]/[0.16] blur-[130px]" />
-        <div className="absolute -bottom-52 left-[28%] h-[600px] w-[600px] rounded-full bg-[#00b8ff]/[0.17] blur-[130px]" />
-      </div>
-
-      {/* barra de ferramentas */}
-      <header className="glass-bar sticky top-0 z-20">
-        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-5">
+    <div className="min-h-screen bg-[#080808] text-[#f2f2f2] antialiased">
+      {/* Barra de Navegação Superior — Editorial e Minimalista */}
+      <header className="sticky top-0 z-30 border-b border-[#202020] bg-[#0c0c0c]/95 backdrop-blur-md">
+        <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-6">
           <div className="flex items-center gap-3">
-            <span className="flex h-8 w-8 items-center justify-center rounded-[9px] bg-white/[0.12] text-white/90 shadow-[inset_0_1px_0_rgba(255,255,255,0.15)]">
-              <IconWave />
-            </span>
-            <div className="leading-tight">
-              <h1 className="text-[15px] font-semibold tracking-[-0.01em]">Lyric Studio</h1>
-              <p className="text-[11px] text-white/45">Letra em código · Reels 9:16</p>
+            <div className="flex items-center gap-2">
+              <span className="font-mono text-xs font-bold tracking-widest text-[#f2f2f2]">
+                LYRIC STUDIO
+              </span>
+              <span className="border border-[#2a2a2a] bg-[#141414] px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-[#888888]">
+                PRO // 9:16
+              </span>
             </div>
+            <div className="hidden h-3.5 w-[1px] bg-[#222222] sm:block" />
+            <span className="hidden font-mono text-[11px] text-[#666666] sm:inline">
+              REELS &amp; TIKTOK CODE ENGINE
+            </span>
           </div>
-          {!exporting ? (
-            <Btn variant="primary" onClick={exportVideo} disabled={!canExport}>
-              <IconDownload />
-              Exportar
-            </Btn>
-          ) : (
-            <Btn variant="danger" onClick={cancelExport}>
-              Cancelar gravação
-            </Btn>
-          )}
+
+          <div className="flex items-center gap-3">
+            {!exporting ? (
+              <Btn variant="primary" onClick={exportVideo} disabled={!canExport}>
+                <IconDownload />
+                <span>Exportar Vídeo</span>
+              </Btn>
+            ) : (
+              <Btn variant="danger" onClick={cancelExport}>
+                Cancelar Gravação
+              </Btn>
+            )}
+          </div>
         </div>
       </header>
 
-      <main className="mx-auto grid max-w-6xl gap-8 px-5 pb-20 pt-8 lg:grid-cols-[minmax(0,1fr)_380px]">
-        <div className="space-y-7">
-          {/* áudio */}
+      {/* Espaço de Trabalho Editorial em 2 Colunas */}
+      <main className="mx-auto grid max-w-7xl gap-8 px-6 pb-24 pt-8 lg:grid-cols-[1fr_390px] xl:grid-cols-[1fr_420px]">
+        {/* Coluna Esquerda: Espaço de Edição (approx 60-65%) */}
+        <div className="space-y-6">
+          {/* 01. ÁUDIO */}
           <Group
-            title="Áudio"
+            index="01"
+            title="Arquivo de Áudio"
             footer={
               engine.loaded
-                ? undefined
-                : 'Sem áudio, o preview roda em modo demonstração, com espectro simulado.'
+                ? `Áudio carregado com sucesso (${fmtTime(duration)}). Sincronização pronta.`
+                : 'Modo demonstração ativo sem arquivo de áudio. Suporta MP3, WAV, M4A, OGG.'
             }
           >
-            <label className="group flex cursor-pointer items-center gap-4 px-4 py-4 transition hover:bg-white/[0.04]">
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/[0.1] text-white/80">
-                <IconWave />
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-[15px] font-medium">
-                  {engine.loaded ? engine.fileName : 'Escolher arquivo de áudio'}
-                </span>
-                <span className="block text-xs text-white/45">
-                  {engine.loaded ? `${fmtTime(duration)} de duração` : 'mp3, wav, m4a, ogg'}
-                </span>
-              </span>
-              <span className="text-[13px] text-accent">{engine.loaded ? 'Trocar' : 'Selecionar'}</span>
-              <input
-                type="file"
-                accept="audio/*"
-                className="hidden"
-                onChange={(e) => onAudio(e.target.files?.[0])}
-              />
-            </label>
-            {audioError && <Row label={<span className="text-[#ff6961]">{audioError}</span>} />}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-[#101010]">
+              <div className="flex items-center gap-3.5 min-w-0">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center border border-[#2a2a2a] bg-[#161616] text-[#cccccc]">
+                  <IconWave />
+                </div>
+                <div className="min-w-0">
+                  <div className="truncate font-mono text-[13px] font-medium text-[#f2f2f2]">
+                    {engine.loaded ? engine.fileName : 'Nenhum arquivo de áudio selecionado'}
+                  </div>
+                  <div className="mt-0.5 font-mono text-[11px] text-[#777777]">
+                    {engine.loaded
+                      ? `${fmtTime(duration)} de reprodução`
+                      : 'MP3 · WAV · M4A · OGG (arraste ou selecione)'}
+                  </div>
+                </div>
+              </div>
+
+              <label className="inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 border border-[#333333] bg-[#181818] px-4 py-2 font-mono text-[11px] uppercase tracking-wider text-[#f2f2f2] transition hover:border-[#777777] hover:bg-[#222222]">
+                <IconUpload />
+                <span>{engine.loaded ? 'Substituir' : 'Selecionar'}</span>
+                <input
+                  type="file"
+                  accept="audio/*"
+                  className="hidden"
+                  onChange={(e) => onAudio(e.target.files?.[0])}
+                />
+              </label>
+            </div>
+            {audioError && (
+              <div className="border-t border-[#3a1a1a] bg-[#220d0d] px-4 py-2 font-mono text-xs text-[#ff7777]">
+                {audioError}
+              </div>
+            )}
           </Group>
 
-          {/* música */}
-          <Group title="Música">
-            <Row label="Título" hint="Vira o comando ou o nome da classe">
-              <Field value={meta.title} onChange={(e) => setMeta({ ...meta, title: e.target.value })} />
+          {/* 02. METADADOS DA MÚSICA */}
+          <Group index="02" title="Metadados da Música">
+            <Row label="Título da Música" hint="Nome da faixa musical e comando base do código">
+              <Field
+                value={meta.title}
+                placeholder="Ex: Loop do Meu Mundo"
+                onChange={(e) => setMeta({ ...meta, title: e.target.value })}
+              />
             </Row>
-            <Row label="Artista">
-              <Field value={meta.artist} onChange={(e) => setMeta({ ...meta, artist: e.target.value })} />
+            <Row label="Artista / Banda" hint="Autor da composição">
+              <Field
+                value={meta.artist}
+                placeholder="Ex: Manu"
+                onChange={(e) => setMeta({ ...meta, artist: e.target.value })}
+              />
             </Row>
-            <Row label="Ano">
+            <Row label="Ano de Lançamento" hint="Metadado de referência">
               <Field
                 type="number"
                 value={meta.year}
@@ -395,12 +411,14 @@ export default function App() {
             </Row>
           </Group>
 
-          {/* letra */}
+          {/* 03. EDITOR DE LETRA */}
           <Group
-            title="Letra"
+            index="03"
+            title="Letra da Música"
             action={
-              <label className="cursor-pointer text-[13px] text-accent transition hover:opacity-75">
-                Importar .lrc
+              <label className="flex cursor-pointer items-center gap-1.5 border border-[#2e2e2e] bg-[#161616] px-2.5 py-1 font-mono text-[10px] uppercase tracking-wider text-[#cccccc] transition hover:border-[#666666] hover:text-white">
+                <IconUpload />
+                <span>Importar .LRC</span>
                 <input
                   type="file"
                   accept=".lrc,.txt,text/plain"
@@ -410,86 +428,124 @@ export default function App() {
               </label>
             }
             footer={
-              <>
-                Um verso por linha. Linha em branco separa estrofes e <code className="font-mono">[Refrão]</code> nomeia a
-                estrofe. Versos com <code className="font-mono">[mm:ss.xx]</code> usam esse tempo. Você pode mixar estilos
-                automaticamente ou usar tags como <code className="font-mono">{'{sudo}'}</code>, <code className="font-mono">{'{echo}'}</code>, <code className="font-mono">{'{wall}'}</code>, <code className="font-mono">{'{log}'}</code>, <code className="font-mono">{'{sing}'}</code> em cada verso.
-              </>
+              <div className="space-y-1">
+                <div>
+                  Estrutura: 1 verso por linha · Linha em branco separa estrofes ·{' '}
+                  <span className="font-mono text-[#aaaaaa]">[Refrão]</span> rotula a estrofe ·{' '}
+                  <span className="font-mono text-[#aaaaaa]">[mm:ss.xx]</span> define o timestamp.
+                </div>
+                <div>
+                  Tags de estilo de verso:{' '}
+                  <span className="font-mono text-[#999999]">&#123;sudo&#125;</span>,{' '}
+                  <span className="font-mono text-[#999999]">&#123;echo&#125;</span>,{' '}
+                  <span className="font-mono text-[#999999]">&#123;wall&#125;</span>,{' '}
+                  <span className="font-mono text-[#999999]">&#123;log&#125;</span>,{' '}
+                  <span className="font-mono text-[#999999]">&#123;sing&#125;</span>.
+                </div>
+              </div>
             }
           >
-            <Pane>
+            <div className="relative bg-[#0c0c0c]">
+              <div className="flex items-center justify-between border-b border-[#1c1c1c] px-4 py-1.5 font-mono text-[10px] text-[#666666]">
+                <span>EDITOR MONOESPACIAL</span>
+                <span>{parsed.length} VERSOS DETECTADOS</span>
+              </div>
               <textarea
                 value={text}
                 readOnly={syncing}
                 onChange={(e) => setText(e.target.value)}
                 spellCheck={false}
-                rows={11}
+                rows={12}
                 aria-label="Letra da música"
-                className="block w-full resize-y bg-transparent font-mono text-[13px] leading-6 text-white/85 outline-none placeholder:text-white/25"
+                className="block w-full resize-y bg-transparent p-4 font-mono text-[13px] leading-6 text-[#dedede] outline-none placeholder:text-[#3a3a3a] focus:bg-[#0f0f0f]"
               />
-            </Pane>
+            </div>
           </Group>
 
-          {/* sincronização */}
+          {/* 04. SINCRONIZAÇÃO */}
           <Group
-            title="Sincronização"
+            index="04"
+            title="Sincronização Rítmica"
             footer={
               syncing
-                ? undefined
+                ? 'Modo de marcação ativo. Pressione Espaço no início de cada linha cantada.'
                 : engine.loaded
-                  ? 'Ouça a música e marque o início de cada verso no ritmo.'
-                  : 'Carregue um áudio para marcar os tempos tocando.'
+                  ? 'Ouça a música e marque o início de cada verso no compasso.'
+                  : 'Carregue um arquivo de áudio acima para habilitar a marcação rítmica.'
             }
           >
             {!syncing ? (
               <>
-                <Row label="Marcar tempos tocando" hint="Espaço marca o início do verso, ⌫ desfaz">
-                  <Btn variant="primary" size="sm" onClick={startSync} disabled={!engine.loaded || !parsed.length || exporting}>
-                    Iniciar
+                <Row
+                  label="Marcar tempos tocando"
+                  hint="Pressione [Espaço] para marcar o verso e [Backspace] para desfazer"
+                >
+                  <Btn
+                    variant="primary"
+                    size="sm"
+                    onClick={startSync}
+                    disabled={!engine.loaded || !parsed.length || exporting}
+                  >
+                    Iniciar Sincronia
                   </Btn>
                 </Row>
-                <Row label="Limpar tempos">
-                  <Btn size="sm" onClick={() => setText((p) => stripAllTags(p))} disabled={exporting}>
+                <Row label="Limpar marcações de tempo" hint="Remove todos os carimbos [mm:ss.xx]">
+                  <Btn
+                    size="sm"
+                    onClick={() => setText((p) => stripAllTags(p))}
+                    disabled={exporting}
+                  >
                     Limpar
                   </Btn>
                 </Row>
               </>
             ) : (
-              <Pane>
-                <p className="text-xs text-white/45">
-                  {syncCursor! < parsed.length
-                    ? `Verso ${syncCursor! + 1} de ${parsed.length}`
-                    : 'Todos os versos marcados'}
-                </p>
-                <p className="my-2 min-h-[2.25rem] text-[19px] font-semibold leading-snug tracking-[-0.01em]">
-                  {syncLine ? syncLine.text : 'Concluído'}
-                </p>
-                <div className="flex flex-wrap gap-2">
+              <div className="border border-[#383838] bg-[#121212] p-5">
+                <div className="flex items-center justify-between border-b border-[#222222] pb-3">
+                  <span className="font-mono text-[11px] font-semibold tracking-wider text-[#888888]">
+                    {syncCursor! < parsed.length
+                      ? `VERSO [${syncCursor! + 1} / ${parsed.length}]`
+                      : 'TODOS OS VERSOS CARIMBADOS'}
+                  </span>
+                  <span className="font-mono text-[11px] text-[#666666]">
+                    TEMPO ATUAL: {fmtTime(time)}
+                  </span>
+                </div>
+
+                <div className="my-5 min-h-[3rem] font-mono text-[18px] font-medium leading-relaxed tracking-tight text-[#f2f2f2]">
+                  {syncLine ? (
+                    <span>&ldquo;{syncLine.text}&rdquo;</span>
+                  ) : (
+                    <span className="text-[#888888]">// Concluído com sucesso</span>
+                  )}
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2 border-t border-[#222222] pt-4">
                   <Btn variant="primary" onClick={stamp} disabled={!syncLine}>
-                    Marcar
+                    Marcar [Espaço]
                   </Btn>
                   <Btn onClick={undoStamp} disabled={syncCursor === 0}>
-                    Desfazer
+                    Desfazer [⌫]
                   </Btn>
                   <Btn onClick={() => setSyncCursor(null)}>
                     <IconCheck />
-                    Concluir
+                    <span>Concluir Sincronia</span>
                   </Btn>
                 </div>
-              </Pane>
+              </div>
             )}
           </Group>
 
-          {/* aparência */}
-          <Group title="Aparência">
+          {/* 05. CONFIGURAÇÃO VISUAL & ESTILO */}
+          <Group index="05" title="Configuração Visual &amp; Renderizador">
             <Row
-              label="Formato"
+              label="Linguagem do Código"
               hint={
                 terminal
-                  ? 'Só o código sendo escrito, em preto liso'
+                  ? 'Estilo script shell / bash, estética brutalista'
                   : codeFormat === 'javascript'
-                    ? 'Classe JavaScript com brilho e reação ao áudio'
-                    : 'Classe Python com brilho e reação ao áudio'
+                    ? 'Classe JavaScript com sintaxe refinada'
+                    : 'Classe Python com tipagem e sintaxe elegante'
               }
             >
               <Segmented
@@ -502,11 +558,17 @@ export default function App() {
                 ]}
               />
             </Row>
-            <Row label="Ondas sonoras" hint="Barras de espectro no rodapé do vídeo">
+
+            <Row label="Espectro de Ondas Sonoras" hint="Barras de frequência reativas no rodapé">
               <Switch label="Ondas sonoras" checked={spectrum} onChange={setSpectrum} />
             </Row>
-            <Row label="Tema">
-              <Select value={themeId} onChange={(e) => setThemeId(e.target.value)} aria-label="Tema de cores">
+
+            <Row label="Tema Cromático" hint="Paleta de sintaxe do código">
+              <Select
+                value={themeId}
+                onChange={(e) => setThemeId(e.target.value)}
+                aria-label="Tema de cores"
+              >
                 {THEMES.map((t) => (
                   <option key={t.id} value={t.id}>
                     {t.name}
@@ -514,7 +576,8 @@ export default function App() {
                 ))}
               </Select>
             </Row>
-            <Row label="Cada verso como">
+
+            <Row label="Estrutura de cada verso" hint="Assinatura sintática gerada">
               <Select
                 value={style}
                 onChange={(e) => setStyle(e.target.value as CallStyleId)}
@@ -542,73 +605,88 @@ export default function App() {
                 ))}
               </Select>
             </Row>
+
             {!terminal && (
-              <Row label="Indentação">
+              <Row label="Indentação" hint="Espaçamento em colunas">
                 <Segmented
                   value={indent}
                   onChange={setIndent}
                   options={[
-                    { value: 2, label: '2' },
-                    { value: 4, label: '4' },
+                    { value: 2, label: '2 espaços' },
+                    { value: 4, label: '4 espaços' },
                   ]}
                 />
               </Row>
             )}
-            <Row label="Tamanho do texto">
+
+            <Row label="Tamanho Tipográfico" hint="Escala da fonte monoespacial no canvas">
               <div className="flex w-52 items-center gap-3">
-                <Slider label="Tamanho do texto" value={fontSize} min={26} max={56} onChange={setFontSize} />
-                <span className="w-8 text-right text-[13px] tabular-nums text-white/50">{fontSize}</span>
+                <Slider
+                  label="Tamanho do texto"
+                  value={fontSize}
+                  min={26}
+                  max={56}
+                  onChange={setFontSize}
+                />
+                <span className="w-8 font-mono text-[12px] tabular-nums text-[#888888]">
+                  {fontSize}px
+                </span>
               </div>
             </Row>
+
             <Row
-              label="Rótulo das estrofes"
+              label="Comentários de Seção"
               hint={terminal ? '[verso 1]' : codeFormat === 'javascript' ? '// Verso 1' : '# Verso 1'}
             >
               <Switch label="Rótulo das estrofes" checked={sections} onChange={setSections} />
             </Row>
-            <Row label="Números de linha">
+
+            <Row label="Numeração de Linhas" hint="Exibe régua lateral no código">
               <Switch label="Números de linha" checked={lineNumbers} onChange={setLineNumbers} />
             </Row>
-            <Row label="Guias da zona segura" hint="Só no preview, nunca no vídeo">
+
+            <Row label="Guias da Zona Segura" hint="Referência para Reels/TikTok (apenas preview)">
               <Switch label="Guias da zona segura" checked={guides} onChange={setGuides} />
             </Row>
           </Group>
 
-          {/* exportação */}
+          {/* 06. PIPELINE DE EXPORTAÇÃO */}
           <Group
-            title="Exportação · 1080 × 1920"
+            index="06"
+            title="Pipeline de Exportação · 1080 × 1920"
             footer={
               <>
                 {recFormat
                   ? recFormat.h264
-                    ? 'Este navegador grava em MP4 com H.264/AAC, pronto para o Instagram.'
-                    : `Este navegador grava em ${recFormat.ext.toUpperCase()} sem garantia de H.264. Se necessário, o app mostra como converter.`
-                  : 'Este navegador não suporta gravação de vídeo. Use Chrome, Edge ou Safari recente.'}{' '}
+                    ? 'Navegador compatível com gravação direta em MP4 (H.264 / AAC).'
+                    : `Gravação via container ${recFormat.ext.toUpperCase()}. Compatível com conversão rápida FFmpeg.`
+                  : 'Navegador incompatível com gravação de vídeo. Utilize Google Chrome, Edge ou Safari.'}{' '}
                 {lyricsOnly
-                  ? 'A gravação encerra assim que o código terminar de ser escrito.'
-                  : 'A gravação acontece em tempo real, na duração da música.'}
+                  ? 'A gravação será encerrada automaticamente após o término da letra.'
+                  : 'A gravação renderizará a faixa completa da música em tempo real.'}
               </>
             }
           >
-            <Row label="Quadros por segundo">
+            <Row label="Taxa de Quadros (FPS)" hint="Fluidez do vídeo gravado">
               <Segmented
                 value={fps}
                 onChange={setFps}
                 disabled={exporting}
                 options={[
-                  { value: 30, label: '30' },
-                  { value: 60, label: '60' },
+                  { value: 30, label: '30 FPS' },
+                  { value: 60, label: '60 FPS' },
                 ]}
               />
             </Row>
+
             <Row
-              label="Gravar áudio no vídeo"
+              label="Gravar Áudio no Arquivo"
               hint={
                 !engine.loaded
-                  ? 'Nenhum áudio carregado (o vídeo será exportado mudo)'
+                  ? 'Nenhum áudio carregado (vídeo exportado em silêncio)'
                   : recordAudio
-                    ? 'Inclui a faixa da música no arquivo de vídeo'
-                    : 'Vídeo mudo (ideal para Reels/TikTok onde a música é inserida no app)'
+                    ? 'Faixa de áudio sintetizada no contêiner de vídeo'
+                    : 'Exporta sem áudio (para anexar trilha no Instagram/TikTok)'
               }
             >
               <Switch
@@ -618,13 +696,14 @@ export default function App() {
                 disabled={!engine.loaded || exporting}
               />
             </Row>
+
             <Row
-              label="Duração do vídeo"
+              label="Duração da Renderização"
               hint={
                 !engine.loaded
-                  ? `Somente o tempo da escrita do código (~${fmtTime(effectiveTotal)})`
+                  ? `Duração da digitação do código (~${fmtTime(effectiveTotal)})`
                   : lyricsOnly
-                    ? `Encerra logo após a letra ser escrita (~${fmtTime(effectiveTotal)}) — sem esperar o fim da música`
+                    ? `Encerra assim que a letra termina (~${fmtTime(effectiveTotal)})`
                     : `Grava a música inteira (~${fmtTime(engine.duration)})`
               }
             >
@@ -633,15 +712,16 @@ export default function App() {
                 onChange={(v) => setExportDuration(v as 'lyrics' | 'full')}
                 disabled={!engine.loaded || !recordAudio || exporting}
                 options={[
-                  { value: 'lyrics', label: 'Somente a letra' },
-                  { value: 'full', label: 'Música inteira' },
+                  { value: 'lyrics', label: 'Somente Letra' },
+                  { value: 'full', label: 'Música Inteira' },
                 ]}
               />
             </Row>
+
             {recordAudio && engine.loaded && (
               <Row
-                label="Silenciar na gravação"
-                hint="Muta seus alto-falantes durante a gravação para não fazer barulho"
+                label="Silenciar Alto-Falantes na Gravação"
+                hint="Mantém silêncio local durante a exportação sem afetar o vídeo"
               >
                 <Switch
                   label="Silenciar na gravação"
@@ -651,42 +731,72 @@ export default function App() {
                 />
               </Row>
             )}
+
             {exporting && (
-              <Pane>
-                <div className="h-1 overflow-hidden rounded-full bg-white/15">
-                  <div className="h-full rounded-full bg-accent transition-[width] duration-200" style={{ width: `${progress * 100}%` }} />
+              <Pane className="bg-[#121212]">
+                <div className="flex items-center justify-between font-mono text-[11px] text-[#999999] mb-2">
+                  <span>RENDERIZANDO QUADROS...</span>
+                  <span>{Math.round(progress * 100)}%</span>
                 </div>
-                <p className="mt-2 text-xs text-white/45">
-                  Gravando {fmtTime(time)} de {fmtTime(effectiveTotal)}. Mantenha esta aba aberta e visível.
+                <div className="h-1 w-full bg-[#202020]">
+                  <div
+                    className="h-full bg-[#f2f2f2] transition-all duration-200"
+                    style={{ width: `${progress * 100}%` }}
+                  />
+                </div>
+                <p className="mt-2.5 font-mono text-[11px] text-[#666666]">
+                  Gravando {fmtTime(time)} de {fmtTime(effectiveTotal)}. Mantenha esta aba ativa.
                 </p>
               </Pane>
             )}
+
             {exp.phase === 'done' && (
-              <Pane>
-                <a href={exp.url} download={exp.name} className="text-[15px] font-medium text-accent hover:underline">
-                  Baixar {exp.name}
-                </a>
-                <span className="ml-2 text-xs text-white/40">{(exp.size / 1e6).toFixed(1)} MB</span>
+              <Pane className="bg-[#141414] border-t border-[#262626]">
+                <div className="flex items-center justify-between">
+                  <a
+                    href={exp.url}
+                    download={exp.name}
+                    className="font-mono text-[13px] font-semibold text-[#f2f2f2] underline underline-offset-4 hover:text-white"
+                  >
+                    Baixar {exp.name}
+                  </a>
+                  <span className="font-mono text-[11px] text-[#888888]">
+                    {(exp.size / 1e6).toFixed(1)} MB
+                  </span>
+                </div>
                 {!exp.h264 && (
-                  <p className="mt-1.5 text-xs leading-relaxed text-white/45">
-                    Este navegador não gravou em H.264/AAC, que é o que o Instagram espera. Converta antes de postar:{' '}
-                    <code className="font-mono text-white/65">
+                  <p className="mt-2 font-mono text-[11px] leading-relaxed text-[#777777]">
+                    Para otimização universal no Instagram, converta com FFmpeg se necessário:{' '}
+                    <code className="block mt-1 bg-[#0a0a0a] p-2 text-[#cccccc] border border-[#222222]">
                       ffmpeg -i {exp.name} -c:v libx264 -pix_fmt yuv420p -c:a aac reels.mp4
                     </code>
                   </p>
                 )}
               </Pane>
             )}
-            {exp.phase === 'error' && <Row label={<span className="text-[#ff6961]">{exp.message}</span>} />}
+
+            {exp.phase === 'error' && (
+              <div className="border-t border-[#3a1a1a] bg-[#220d0d] px-4 py-2 font-mono text-xs text-[#ff7777]">
+                {exp.message}
+              </div>
+            )}
           </Group>
         </div>
 
-        {/* preview */}
-        <aside className="lg:sticky lg:top-[88px] lg:self-start">
-          <div className="glass rounded-[34px] p-2.5">
+        {/* Coluna Direita: Live Preview 9:16 Frame */}
+        <aside className="lg:sticky lg:top-[72px] lg:self-start space-y-3">
+          {/* Moldura Arquitetural do Preview */}
+          <div className="border border-[#222222] bg-[#0c0c0c] p-2">
+            <div className="flex items-center justify-between px-2 py-1.5 border-b border-[#1c1c1c] mb-2 font-mono text-[10px] text-[#666666]">
+              <span className="uppercase tracking-wider">PREVIEW // 9:16</span>
+              <span className="border border-[#242424] px-1 py-0.2 text-[#888888]">
+                {engine.loaded ? 'ÁUDIO REAL' : 'DEMO'}
+              </span>
+            </div>
+
             <div
-              className="relative mx-auto overflow-hidden rounded-[26px] bg-black ring-1 ring-white/10"
-              style={{ width: 'min(100%, calc(66vh * 9 / 16))', aspectRatio: '9 / 16' }}
+              className="relative mx-auto overflow-hidden bg-black border border-[#202020]"
+              style={{ width: '100%', aspectRatio: '9 / 16' }}
             >
               <Preview
                 canvasRef={canvasRef}
@@ -708,37 +818,35 @@ export default function App() {
                       : `python ${built.varName}.py`,
                 }}
               />
+
               {!playing && time < 0.05 && !exporting && (
                 <button
                   onClick={togglePlay}
-                  aria-label="Reproduzir"
-                  className="absolute inset-0 flex items-center justify-center bg-black/35 backdrop-blur-[2px] transition hover:bg-black/25"
+                  aria-label="Reproduzir prévia"
+                  className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-[1px] transition hover:bg-black/30 cursor-pointer"
                 >
-                  <span className="flex h-16 w-16 items-center justify-center rounded-full bg-white/20 text-white shadow-lg backdrop-blur-xl">
+                  <span className="flex h-14 w-14 items-center justify-center border border-white/20 bg-white/10 text-white backdrop-blur-md transition hover:scale-105">
                     <IconPlay />
                   </span>
                 </button>
               )}
-              {!engine.loaded && (
-                <span className="absolute left-3 top-3 rounded-full bg-black/50 px-2.5 py-1 text-[10px] font-medium text-white/70 backdrop-blur-md">
-                  Demonstração
-                </span>
-              )}
             </div>
           </div>
 
-          <div className="glass mt-3 flex items-center gap-3 rounded-full py-2 pl-2 pr-4">
+          {/* Console de Controle e Linha de Tempo de Reprodução */}
+          <div className="border border-[#222222] bg-[#0e0e0e] px-3 py-2 flex items-center gap-3">
             <Btn
-              variant="glass"
+              variant="secondary"
               onClick={togglePlay}
               disabled={(!engine.loaded && !parsed.length) || exporting}
               aria-label={playing ? 'Pausar' : 'Reproduzir'}
-              className="!h-9 !w-9 !p-0"
+              className="!h-8 !w-8 !p-0 shrink-0"
             >
               {playing ? <IconPause /> : <IconPlay />}
             </Btn>
+
             <Slider
-              label="Posição da música"
+              label="Posição do áudio"
               value={Math.min(time, effectiveTotal || 1)}
               min={0}
               max={effectiveTotal || 1}
@@ -750,7 +858,8 @@ export default function App() {
               }}
               className="min-w-0 flex-1"
             />
-            <span className="w-[88px] text-right text-xs tabular-nums text-white/50">
+
+            <span className="shrink-0 font-mono text-[11px] tabular-nums text-[#888888]">
               {fmtTime(time)} / {fmtTime(effectiveTotal)}
             </span>
           </div>
