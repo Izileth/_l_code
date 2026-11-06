@@ -306,31 +306,33 @@ export default function App() {
     <div className="min-h-screen bg-[#080808] text-[#f2f2f2] antialiased">
       {/* Barra de Navegação Superior — Editorial e Minimalista */}
       <header className="sticky top-0 z-30 border-b border-[#202020] bg-[#0c0c0c]/95 backdrop-blur-md">
-        <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-6">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2">
-              <span className="font-mono text-xs font-bold tracking-widest text-[#f2f2f2]">
+        <div className="mx-auto flex h-12 sm:h-14 max-w-7xl items-center justify-between px-4 sm:px-6">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+              <span className="font-mono text-[11px] sm:text-xs font-bold tracking-widest text-[#f2f2f2] whitespace-nowrap">
                 LYRIC STUDIO
               </span>
-              <span className="border border-[#2a2a2a] bg-[#141414] px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-[#888888]">
+              <span className="border border-[#2a2a2a] bg-[#141414] px-1.5 py-0.5 font-mono text-[9px] sm:text-[10px] uppercase tracking-wider text-[#888888] whitespace-nowrap">
                 PRO // 9:16
               </span>
             </div>
-            <div className="hidden h-3.5 w-[1px] bg-[#222222] sm:block" />
-            <span className="hidden font-mono text-[11px] text-[#666666] sm:inline">
+            <div className="hidden h-3.5 w-[1px] bg-[#222222] md:block" />
+            <span className="hidden font-mono text-[11px] text-[#666666] md:inline">
               REELS &amp; TIKTOK CODE ENGINE
             </span>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             {!exporting ? (
               <Btn variant="primary" onClick={exportVideo} disabled={!canExport}>
                 <IconDownload />
-                <span>Exportar Vídeo</span>
+                <span className="hidden xs:inline sm:inline">Exportar Vídeo</span>
+                <span className="sm:hidden">Export</span>
               </Btn>
             ) : (
               <Btn variant="danger" onClick={cancelExport}>
-                Cancelar Gravação
+                <span className="hidden sm:inline">Cancelar Gravação</span>
+                <span className="sm:hidden">Cancelar</span>
               </Btn>
             )}
           </div>
