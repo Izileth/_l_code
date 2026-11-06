@@ -106,12 +106,12 @@ export function Row({
   children?: ReactNode
 }) {
   return (
-    <div className="flex min-h-[46px] items-center justify-between gap-4 px-4 py-2.5 hover:bg-[#121212]/50 transition-colors">
-      <div className="min-w-0 pr-2">
+    <div className="flex min-h-[46px] flex-col xs:flex-row xs:items-center justify-between gap-2 xs:gap-4 px-3 sm:px-4 py-2.5 hover:bg-[#121212]/50 transition-colors">
+      <div className="min-w-0 xs:pr-2 flex-1">
         <div className="text-[13px] font-normal tracking-[-0.01em] text-[#e8e8e8]">{label}</div>
         {hint && <div className="mt-0.5 text-[11px] leading-tight text-[#6e6e6e]">{hint}</div>}
       </div>
-      {children && <div className="flex shrink-0 items-center">{children}</div>}
+      {children && <div className="flex shrink-0 items-center xs:justify-end">{children}</div>}
     </div>
   )
 }
@@ -127,7 +127,7 @@ export function Field(props: InputHTMLAttributes<HTMLInputElement>) {
   return (
     <input
       {...rest}
-      className={`h-8 w-52 max-w-full rounded-none border border-[#262626] bg-[#141414] px-2.5 text-right font-mono text-[12px] text-[#f2f2f2] outline-none transition focus:border-[#777777] placeholder:text-[#444444] ${className}`}
+      className={`h-8 w-full xs:w-52 max-w-full rounded-none border border-[#262626] bg-[#141414] px-2.5 text-right font-mono text-[12px] text-[#f2f2f2] outline-none transition focus:border-[#777777] placeholder:text-[#444444] ${className}`}
     />
   )
 }
@@ -171,7 +171,7 @@ export function Segmented<T extends string | number>({
 }) {
   return (
     <div
-      className={`inline-flex border border-[#262626] bg-[#121212] p-[2px] ${disabled ? 'opacity-40 pointer-events-none' : ''}`}
+      className={`inline-flex flex-wrap border border-[#262626] bg-[#121212] p-[2px] ${disabled ? 'opacity-40 pointer-events-none' : ''}`}
       role="radiogroup"
     >
       {options.map((o) => {
@@ -184,7 +184,7 @@ export function Segmented<T extends string | number>({
             aria-checked={on}
             disabled={disabled}
             onClick={() => onChange(o.value)}
-            className={`px-3 py-1 font-mono text-[11px] uppercase tracking-wide transition focus-visible:outline-none ${
+            className={`px-2.5 sm:px-3 py-1 font-mono text-[10px] sm:text-[11px] uppercase tracking-wide transition focus-visible:outline-none ${
               on
                 ? 'bg-[#f2f2f2] text-[#080808] font-semibold'
                 : 'text-[#888888] hover:text-[#d0d0d0]'

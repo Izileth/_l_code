@@ -104,6 +104,13 @@ body {
     background: #f2f2f2;
     box-shadow: 0 0 0 1px #080808;
   }
+
+  /* Touch targets maiores em mobile */
+  @media (max-width: 640px) {
+    .slider {
+      height: 32px;
+    }
+  }
 }
 
 textarea {
@@ -128,3 +135,6 @@ textarea {
 ::-webkit-scrollbar-thumb:hover {
   background: #444444;
 }
+
+/* Breakpoint xs customizado (480px) para responsividade intermediária */
+@custom-variant xs (@media (width >= 480px));

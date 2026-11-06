@@ -340,7 +340,7 @@ export default function App() {
       </header>
 
       {/* Espaço de Trabalho Editorial em 2 Colunas */}
-      <main className="mx-auto grid max-w-7xl gap-8 px-6 pb-24 pt-8 lg:grid-cols-[1fr_390px] xl:grid-cols-[1fr_420px]">
+      <main className="mx-auto grid max-w-7xl gap-6 sm:gap-8 px-4 sm:px-6 pb-16 sm:pb-24 pt-5 sm:pt-8 lg:grid-cols-[1fr_390px] xl:grid-cols-[1fr_420px]">
         {/* Coluna Esquerda: Espaço de Edição (approx 60-65%) */}
         <div className="space-y-6">
           {/* 01. ÁUDIO */}
@@ -353,7 +353,7 @@ export default function App() {
                 : 'Modo demonstração ativo sem arquivo de áudio. Suporta MP3, WAV, M4A, OGG.'
             }
           >
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-[#101010]">
+            <div className="flex flex-col xs:flex-row xs:items-center justify-between gap-3 sm:gap-4 p-3 sm:p-4 bg-[#101010]">
               <div className="flex items-center gap-3.5 min-w-0">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center border border-[#2a2a2a] bg-[#161616] text-[#cccccc]">
                   <IconWave />
@@ -786,7 +786,7 @@ export default function App() {
         </div>
 
         {/* Coluna Direita: Live Preview 9:16 Frame */}
-        <aside className="lg:sticky lg:top-[72px] lg:self-start space-y-3">
+        <aside className="order-first lg:order-none lg:sticky lg:top-[72px] lg:self-start space-y-3">
           {/* Moldura Arquitetural do Preview */}
           <div className="border border-[#222222] bg-[#0c0c0c] p-2">
             <div className="flex items-center justify-between px-2 py-1.5 border-b border-[#1c1c1c] mb-2 font-mono text-[10px] text-[#666666]">
@@ -798,7 +798,7 @@ export default function App() {
 
             <div
               className="relative mx-auto overflow-hidden bg-black border border-[#202020]"
-              style={{ width: '100%', aspectRatio: '9 / 16' }}
+              style={{ width: '100%', aspectRatio: '9 / 16', maxHeight: '70svh' }}
             >
               <Preview
                 canvasRef={canvasRef}
